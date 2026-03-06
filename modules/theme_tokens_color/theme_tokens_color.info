@@ -1,0 +1,5 @@
+name = Theme Tokens: Color
+description = Adds color token support to Theme Tokens. Provides color pickers and preset color scheme selection for themes that declare color tokens in their tokens.inc file.
+type = module
+backdrop = 1.x
+dependencies[] = theme_tokens

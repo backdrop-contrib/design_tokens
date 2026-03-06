@@ -1,0 +1,60 @@
+/**
+ * @file
+ * Shared admin UI styles for Theme Tokens.
+ */
+
+/* Preview toggle button. */
+#theme-tokens-preview-toggle {
+  margin-bottom: 1.5rem;
+}
+
+/* Fixed preview panel — slides in from the right, independent of admin layout. */
+#theme-tokens-preview-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 50vw;
+  min-width: 400px;
+  background: #fff;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+#theme-tokens-preview-panel[hidden] {
+  display: none;
+}
+
+.theme-tokens-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: #20252e;
+  color: #fff;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+#theme-tokens-preview-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+#theme-tokens-preview-close:hover {
+  color: #ccc;
+}
+
+/* iframe fills the rest of the panel. */
+#theme-tokens-preview-iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+}

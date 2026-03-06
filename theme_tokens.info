@@ -1,0 +1,4 @@
+name = Theme Tokens
+description = Infrastructure for CSS custom property-based theme configuration. Themes declare tokens in a tokens.inc file. Enable sub-modules to add support for specific token types (colors, fonts, etc.).
+type = module
+backdrop = 1.x

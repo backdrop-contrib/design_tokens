@@ -1,0 +1,23 @@
+/**
+ * @file
+ * Color field styles for Theme Tokens: Color.
+ */
+
+/* Compact monospace text input for the hex value. */
+.theme-tokens-color-field {
+  width: 6em;
+  font-family: monospace;
+  vertical-align: middle;
+}
+
+/* Native browser color picker sits alongside the text field. */
+.theme-tokens-color-picker {
+  width: 2.5em;
+  height: 2em;
+  padding: 0;
+  border: 1px solid #999;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 0.4em;
+  cursor: pointer;
+}

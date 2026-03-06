@@ -1,0 +1,59 @@
+<?php
+/**
+ * @file
+ * Theme Tokens: Color sub-module.
+ *
+ * Registers the 'color' token type with the Theme Tokens system and provides
+ * the color picker field UI.
+ */
+
+/**
+ * Implements hook_theme_tokens_types().
+ */
+function theme_tokens_color_theme_tokens_types() {
+  return array(
+    'color' => array(
+      'label'          => t('Color'),
+      'field callback' => 'theme_tokens_color_build_field',
+    ),
+  );
+}
+
+/**
+ * Field callback for the 'color' token type.
+ *
+ * Builds a hex text field enhanced by JS with a native browser color picker.
+ *
+ * @param string $token_name
+ * @param array $token
+ *   Token definition from tokens.inc.
+ * @param array $current_values
+ *   Current saved/default values keyed by token name.
+ *
+ * @return array
+ *   A Form API element.
+ */
+function theme_tokens_color_build_field($token_name, array $token, array $current_values) {
+  // Normalize to lowercase hex so the native color picker can read the value.
+  $value = isset($current_values[$token_name]) ? strtolower($current_values[$token_name]) : '';
+
+  return array(
+    '#type' => 'textfield',
+    '#title' => isset($token['label']) ? $token['label'] : $token_name,
+    '#default_value' => $value,
+    '#size' => 10,
+    '#maxlength' => 7,
+    '#attributes' => array(
+      'class' => array('theme-tokens-color-field'),
+      'data-token-name' => $token_name,
+    ),
+    '#attached' => array(
+      'js' => array(
+        backdrop_get_path('module', 'theme_tokens_color') . '/js/theme-tokens-color.js',
+      ),
+      'css' => array(
+        backdrop_get_path('module', 'theme_tokens_color') . '/css/theme-tokens-color.css',
+      ),
+    ),
+  );
+}
