@@ -1,6 +1,6 @@
 /**
  * @file
- * Theme Tokens Font — admin field enhancement.
+ * Design Tokens Font — admin field enhancement.
  *
  * Inserts a preset select dropdown and font preview for each font token field.
  * The original text field remains always visible so the user can see (and edit)
@@ -13,7 +13,7 @@
    * Dynamically injects a Google Fonts stylesheet if not already loaded.
    */
   function loadGoogleFont(googleFontSpec) {
-    var id = 'theme-tokens-gf-' + googleFontSpec.replace(/[^a-zA-Z0-9]/g, '-');
+    var id = 'design-tokens-gf-' + googleFontSpec.replace(/[^a-zA-Z0-9]/g, '-');
     if (document.getElementById(id)) {
       return;
     }
@@ -24,9 +24,9 @@
     document.head.appendChild(link);
   }
 
-  Backdrop.behaviors.themeTokensFont = {
+  Backdrop.behaviors.designTokensFont = {
     attach: function (context, settings) {
-      var s = settings.themeTokensFont || {};
+      var s = settings.designTokensFont || {};
       var presets     = s.presets     || [];
       var selectLabel = s.selectLabel || '— Choose a font —';
       var previewText = s.previewText || 'The quick brown fox jumps over the lazy dog.';
@@ -41,13 +41,13 @@
         });
       });
 
-      $('.theme-tokens-font-field', context).once('theme-tokens-font', function () {
+      $('.design-tokens-font-field', context).once('design-tokens-font', function () {
         var $field   = $(this);
         var $wrapper = $field.closest('.form-item');
         var current  = $field.val();
 
         /* ---- Build the preset select ------------------------------------ */
-        var $select = $('<select class="theme-tokens-font-select form-select">');
+        var $select = $('<select class="design-tokens-font-select form-select">');
         $select.append($('<option>').val('').text(selectLabel));
 
         var matchesPreset = false;
@@ -69,7 +69,7 @@
         });
 
         /* ---- Build the preview ------------------------------------------ */
-        var $preview = $('<div class="theme-tokens-font-preview">').text(previewText);
+        var $preview = $('<div class="design-tokens-font-preview">').text(previewText);
         $preview.css('font-family', current || 'inherit');
 
         /* ---- Insert into DOM -------------------------------------------- */
@@ -89,12 +89,12 @@
 
           if (googleFontsMap[val]) {
             loadGoogleFont(googleFontsMap[val]);
-            if (Backdrop.themeTokens && Backdrop.themeTokens.loadFontInPreview) {
-              Backdrop.themeTokens.loadFontInPreview(googleFontsMap[val]);
+            if (Backdrop.designTokens && Backdrop.designTokens.loadFontInPreview) {
+              Backdrop.designTokens.loadFontInPreview(googleFontsMap[val]);
             }
           }
-          if (Backdrop.themeTokens && Backdrop.themeTokens.updatePreview) {
-            Backdrop.themeTokens.updatePreview($field.data('token-name'), val);
+          if (Backdrop.designTokens && Backdrop.designTokens.updatePreview) {
+            Backdrop.designTokens.updatePreview($field.data('token-name'), val);
           }
         });
 
@@ -115,8 +115,8 @@
             $select.val('');
           }
 
-          if (Backdrop.themeTokens && Backdrop.themeTokens.updatePreview) {
-            Backdrop.themeTokens.updatePreview($field.data('token-name'), val);
+          if (Backdrop.designTokens && Backdrop.designTokens.updatePreview) {
+            Backdrop.designTokens.updatePreview($field.data('token-name'), val);
           }
         });
       });

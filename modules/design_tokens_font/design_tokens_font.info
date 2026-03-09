@@ -1,0 +1,6 @@
+name = Design Tokens: Font
+description = Adds font token support to Design Tokens. Provides font family selection for themes that declare font tokens in their tokens.inc file.
+type = module
+backdrop = 1.x
+dependencies[] = design_tokens
+

@@ -2,11 +2,11 @@
 
   'use strict';
 
-  Backdrop.behaviors.themeTokensAdmin = {
+  Backdrop.behaviors.designTokensAdmin = {
     attach: function (context, settings) {
 
       // Collapse all / Expand all toggle.
-      $('#theme-tokens-collapse-all', context).once('theme-tokens-collapse').on('click', function () {
+      $('#design-tokens-collapse-all', context).once('design-tokens-collapse').on('click', function () {
         var $button = $(this);
         var $fieldsets = $('fieldset.collapsible', context);
         var allCollapsed = $fieldsets.filter(':not(.collapsed)').length === 0;
@@ -24,22 +24,22 @@
       });
 
       // Preview panel toggle.
-      $('#theme-tokens-preview-toggle', context).once('theme-tokens-toggle').on('click', function () {
-        Backdrop.themeTokens.togglePreview();
+      $('#design-tokens-preview-toggle', context).once('design-tokens-toggle').on('click', function () {
+        Backdrop.designTokens.togglePreview();
       });
 
       // Close button inside the panel.
-      $('#theme-tokens-preview-close', context).once('theme-tokens-close').on('click', function () {
-        Backdrop.themeTokens.closePreview();
+      $('#design-tokens-preview-close', context).once('design-tokens-close').on('click', function () {
+        Backdrop.designTokens.closePreview();
       });
 
       // Scheme selector — populate all token fields when a preset is chosen.
-      $('#theme-tokens-scheme-select', context).once('theme-tokens-scheme').on('change', function () {
+      $('#design-tokens-scheme-select', context).once('design-tokens-scheme').on('change', function () {
         var scheme_key = $(this).val();
         if (!scheme_key) {
           return;
         }
-        var schemes = (settings.themeTokens && settings.themeTokens.schemes) ? settings.themeTokens.schemes : {};
+        var schemes = (settings.designTokens && settings.designTokens.schemes) ? settings.designTokens.schemes : {};
         var scheme = schemes[scheme_key];
         if (!scheme || !scheme.tokens) {
           return;
@@ -53,21 +53,21 @@
       });
 
       // Initialize live preview iframe.
-      Backdrop.themeTokens.initPreview(context, settings);
+      Backdrop.designTokens.initPreview(context, settings);
     }
   };
 
   /**
-   * Shared Theme Tokens preview utilities.
+   * Shared Design Tokens preview utilities.
    */
-  Backdrop.themeTokens = Backdrop.themeTokens || {
+  Backdrop.designTokens = Backdrop.designTokens || {
 
     /**
      * Opens the preview panel, positioning it below the Backdrop toolbar.
      */
     openPreview: function () {
-      var $panel = $('#theme-tokens-preview-panel');
-      var $toggle = $('#theme-tokens-preview-toggle');
+      var $panel = $('#design-tokens-preview-panel');
+      var $toggle = $('#design-tokens-preview-toggle');
 
       // Position panel below the Backdrop admin toolbar.
       var toolbarHeight = $('#toolbar').outerHeight() || 0;
@@ -75,28 +75,28 @@
 
       $panel.removeAttr('hidden');
       $toggle.text(Backdrop.t('Hide preview'));
-      $('body').addClass('theme-tokens-preview-open');
+      $('body').addClass('design-tokens-preview-open');
     },
 
     /**
      * Closes the preview panel.
      */
     closePreview: function () {
-      $('#theme-tokens-preview-panel').attr('hidden', '');
-      $('#theme-tokens-preview-toggle').text(Backdrop.t('Show preview'));
-      $('body').removeClass('theme-tokens-preview-open');
+      $('#design-tokens-preview-panel').attr('hidden', '');
+      $('#design-tokens-preview-toggle').text(Backdrop.t('Show preview'));
+      $('body').removeClass('design-tokens-preview-open');
     },
 
     /**
      * Toggles the preview panel open or closed.
      */
     togglePreview: function () {
-      var isHidden = $('#theme-tokens-preview-panel').attr('hidden') !== undefined;
+      var isHidden = $('#design-tokens-preview-panel').attr('hidden') !== undefined;
       if (isHidden) {
-        Backdrop.themeTokens.openPreview();
+        Backdrop.designTokens.openPreview();
       }
       else {
-        Backdrop.themeTokens.closePreview();
+        Backdrop.designTokens.closePreview();
       }
     },
 
@@ -105,24 +105,24 @@
      * including loading any Google Fonts needed by font tokens.
      */
     initPreview: function (context, settings) {
-      var $iframe = $('#theme-tokens-preview-iframe', context);
+      var $iframe = $('#design-tokens-preview-iframe', context);
       if (!$iframe.length) {
         return;
       }
 
       // Build Google Fonts map from font module settings if available.
-      var googleFontsMap = Backdrop.themeTokens.buildGoogleFontsMap(settings);
+      var googleFontsMap = Backdrop.designTokens.buildGoogleFontsMap(settings);
 
       $iframe.on('load', function () {
         $('[data-token-name]').each(function () {
           var $field = $(this);
           var tokenName = $field.data('token-name');
           var value = $field.val();
-          Backdrop.themeTokens.updatePreview(tokenName, value);
+          Backdrop.designTokens.updatePreview(tokenName, value);
 
           // For font tokens, also ensure the Google Font is loaded in the iframe.
           if (value && googleFontsMap[value]) {
-            Backdrop.themeTokens.loadFontInPreview(googleFontsMap[value]);
+            Backdrop.designTokens.loadFontInPreview(googleFontsMap[value]);
           }
         });
       });
@@ -130,14 +130,14 @@
 
     /**
      * Builds a flat map of CSS font-family value → Google Fonts spec from
-     * the themeTokensFont settings provided by the font sub-module.
+     * the designTokensFont settings provided by the font sub-module.
      *
      * @param {object} settings  Backdrop.settings passed from attach().
      * @return {object}
      */
     buildGoogleFontsMap: function (settings) {
       var map = {};
-      var s = settings && settings.themeTokensFont;
+      var s = settings && settings.designTokensFont;
       if (!s || !s.presets) {
         return map;
       }
@@ -158,12 +158,12 @@
      * @param {string} value      New CSS value.
      */
     updatePreview: function (tokenName, value) {
-      var $iframe = $('#theme-tokens-preview-iframe');
+      var $iframe = $('#design-tokens-preview-iframe');
       if (!$iframe.length || !$iframe[0].contentWindow) {
         return;
       }
       $iframe[0].contentWindow.postMessage({
-        type: 'themeTokensUpdate',
+        type: 'designTokensUpdate',
         token: '--' + tokenName,
         value: value
       }, window.location.origin);
@@ -175,12 +175,12 @@
      * @param {string} googleFontSpec  Google Fonts CSS2 API family spec.
      */
     loadFontInPreview: function (googleFontSpec) {
-      var $iframe = $('#theme-tokens-preview-iframe');
+      var $iframe = $('#design-tokens-preview-iframe');
       if (!$iframe.length || !$iframe[0].contentWindow) {
         return;
       }
       $iframe[0].contentWindow.postMessage({
-        type: 'themeTokensLoadFont',
+        type: 'designTokensLoadFont',
         googleFont: googleFontSpec
       }, window.location.origin);
     }

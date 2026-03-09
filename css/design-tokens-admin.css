@@ -1,25 +1,25 @@
 /**
  * @file
- * Shared admin UI styles for Theme Tokens.
+ * Shared admin UI styles for Design Tokens.
  */
 
 /* Collapse all / Show preview buttons. */
-#theme-tokens-collapse-all {
+#design-tokens-collapse-all {
   margin-right: 0.75rem;
 }
 
-#theme-tokens-preview-toggle {
+#design-tokens-preview-toggle {
   margin-bottom: 1.5rem;
 }
 
 /* Navigation link to theme settings. */
-.theme-tokens-nav-link {
+.design-tokens-nav-link {
   margin-bottom: 1rem;
   color: #555;
 }
 
 /* Group description text inside fieldsets. */
-.theme-tokens-group-description {
+.design-tokens-group-description {
   color: #555;
   font-size: 0.9em;
   line-height: 1.5;
@@ -27,14 +27,14 @@
 }
 
 /* Push the admin page content left when the preview panel is open. */
-body.theme-tokens-preview-open .l-page,
-body.theme-tokens-preview-open .layout-container {
+body.design-tokens-preview-open .l-page,
+body.design-tokens-preview-open .layout-container {
   margin-right: 50vw;
   transition: margin-right 0.2s ease;
 }
 
 /* Fixed preview panel — sits to the right, below the Backdrop toolbar. */
-#theme-tokens-preview-panel {
+#design-tokens-preview-panel {
   position: fixed;
   right: 0;
   bottom: 0;
@@ -49,11 +49,11 @@ body.theme-tokens-preview-open .layout-container {
   top: 0;
 }
 
-#theme-tokens-preview-panel[hidden] {
+#design-tokens-preview-panel[hidden] {
   display: none;
 }
 
-.theme-tokens-preview-header {
+.design-tokens-preview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -64,7 +64,7 @@ body.theme-tokens-preview-open .layout-container {
   flex-shrink: 0;
 }
 
-#theme-tokens-preview-close {
+#design-tokens-preview-close {
   background: none;
   border: none;
   color: #fff;
@@ -74,12 +74,12 @@ body.theme-tokens-preview-open .layout-container {
   padding: 0 0.25rem;
 }
 
-#theme-tokens-preview-close:hover {
+#design-tokens-preview-close:hover {
   color: #ccc;
 }
 
 /* iframe fills the remaining panel height. */
-#theme-tokens-preview-iframe {
+#design-tokens-preview-iframe {
   flex: 1;
   width: 100%;
   border: none;

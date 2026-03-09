@@ -1,13 +1,13 @@
-# Theme Tokens — Project Notes for Claude
+# Design Tokens — Project Notes for Claude
 
 ## What This Module Is
 
-**Theme Tokens** is a Backdrop CMS module that replaces the Color module with a modern,
+**Design Tokens** is a Backdrop CMS module that replaces the Color module with a modern,
 CSS custom property-based approach to theme configuration. It provides the infrastructure
 for token-based theming; sub-modules add support for specific token types (colors, fonts, etc.).
 
-- **Machine name:** `theme_tokens`
-- **Human name:** Theme Tokens
+- **Machine name:** `design_tokens`
+- **Human name:** Design Tokens
 - **Repo:** TBD (independent project, developed alongside Opera for testing)
 - **Maintainer:** Tim Erickson (stpaultim) / Simplo / Triplo
 
@@ -17,9 +17,9 @@ for token-based theming; sub-modules add support for specific token types (color
 
 The Color module is widely considered a necessary evil in both Drupal and Backdrop. It works
 by doing string replacement on CSS files — a fragile, inelegant approach invented before CSS
-custom properties existed. Theme Tokens replaces this entirely:
+custom properties existed. Design Tokens replaces this entirely:
 
-| Color module | Theme Tokens |
+| Color module | Design Tokens |
 |---|---|
 | Rewrites CSS files | Injects a `:root {}` block in `<head>` |
 | Stores values as database variables | Stores values in Backdrop config (JSON) |
@@ -31,26 +31,26 @@ custom properties existed. Theme Tokens replaces this entirely:
 
 ## Module Structure
 
-Theme Tokens is an infrastructure module. It knows nothing about colors or fonts on its own.
+Design Tokens is an infrastructure module. It knows nothing about colors or fonts on its own.
 Sub-modules register token types and provide the field UI for editing them. Sites enable only
 what they need.
 
 ```
-theme_tokens/                           ← infrastructure only: token loading, :root{}
-  theme_tokens.info                       injection, admin framework, config, menu
-  theme_tokens.module
-  theme_tokens.admin.inc
-  theme_tokens.api.php
-  js/theme-tokens-admin.js
-  css/theme-tokens-admin.css
+design_tokens/                           ← infrastructure only: token loading, :root{}
+  design_tokens.info                       injection, admin framework, config, menu
+  design_tokens.module
+  design_tokens.admin.inc
+  design_tokens.api.php
+  js/design-tokens-admin.js
+  css/design-tokens-admin.css
   CLAUDE.md
   modules/
-    theme_tokens_color/                 ← color token type (color pickers, schemes)
-      theme_tokens_color.info
-      theme_tokens_color.module
-    theme_tokens_font/                  ← font token type (font selectors, stacks)
-      theme_tokens_font.info
-      theme_tokens_font.module
+    design_tokens_color/                 ← color token type (color pickers, schemes)
+      design_tokens_color.info
+      design_tokens_color.module
+    design_tokens_font/                  ← font token type (font selectors, stacks)
+      design_tokens_font.info
+      design_tokens_font.module
 ```
 
 ### Why sub-modules, not separate modules?
@@ -59,7 +59,7 @@ theme_tokens/                           ← infrastructure only: token loading, 
   config storage, CSS injection, admin page framework, and live preview
 - Sub-modules are separable (enable/disable independently) but share the codebase cleanly
 - A site that wants only font control, only color control, or both can enable accordingly
-- Third-party developers can add new token types (`theme_tokens_spacing`, etc.) as
+- Third-party developers can add new token types (`design_tokens_spacing`, etc.) as
   additional sub-modules without touching the parent
 
 ### Why not bake color/font support into the parent?
@@ -93,20 +93,20 @@ type sub-module is active.
 
 ### Token Type Registration
 
-Sub-modules register their token type via `hook_theme_tokens_types()`:
+Sub-modules register their token type via `hook_design_tokens_types()`:
 
 ```php
-function theme_tokens_color_theme_tokens_types() {
+function design_tokens_color_design_tokens_types() {
   return array(
     'color' => array(
       'label'          => t('Color'),
-      'field callback' => 'theme_tokens_color_build_field',
+      'field callback' => 'design_tokens_color_build_field',
     ),
   );
 }
 ```
 
-The parent calls `module_invoke_all('theme_tokens_types')` when building the admin form
+The parent calls `module_invoke_all('design_tokens_types')` when building the admin form
 and delegates field rendering to whichever sub-module owns that type. Unknown token types
 in a `tokens.inc` are silently ignored (graceful degradation if a sub-module is disabled).
 
@@ -156,13 +156,13 @@ $info = array(
   'tokens' => array(
     'color-primary' => array(
       'label'   => t('Background'),
-      'type'    => 'color',       // handled by theme_tokens_color
+      'type'    => 'color',       // handled by design_tokens_color
       'default' => '#6e0e0a',
       'group'   => 'header',
     ),
     'font-heading' => array(
       'label'   => t('Heading Font'),
-      'type'    => 'font',        // handled by theme_tokens_font
+      'type'    => 'font',        // handled by design_tokens_font
       'default' => 'Merriweather, Georgia, serif',
       'group'   => 'typography',
     ),
@@ -221,32 +221,32 @@ Modern approach — no image generation, no server round-trips:
 ## Key Hooks
 
 ### Hooks the parent module implements
-- `hook_preprocess_html()` — injects the `:root {}` `<style>` block
+- `hook_css_alter()` — removes static variables file, injects the `:root {}` inline CSS
+- `hook_js_alter()` — loads preview listener script for supported themes
 - `hook_menu()` — registers admin pages
-- `hook_permission()` — `administer theme tokens`
+- `hook_permission()` — `administer design tokens`
 
 ### Hooks sub-modules implement
-- `hook_theme_tokens_types()` — registers a token type and its field callback
+- `hook_design_tokens_types()` — registers a token type and its field callback
 
 ### Hooks themes/modules can implement
-- `hook_theme_tokens_info_alter(&$info, $theme)` — alter token definitions after loading
-- Documented in `theme_tokens.api.php`
+- `hook_design_tokens_info_alter(&$info, $theme)` — alter token definitions after loading
+- Documented in `design_tokens.api.php`
 
 ---
 
-## Sub-module: theme_tokens_color
+## Sub-module: design_tokens_color
 
 Registers the `color` token type. Provides:
 - Color swatch + hex text field for each color token
 - Scheme preset selector (populates all color fields at once via JS)
 - Live preview updates via postMessage
 
-**Status:** Infrastructure exists in parent; needs refactor to move color-specific
-field building into this sub-module.
+**Status:** Complete and functional.
 
 ---
 
-## Sub-module: theme_tokens_font
+## Sub-module: design_tokens_font
 
 Registers the `font` token type. Provides:
 - Font selector field (select or autocomplete)
@@ -254,7 +254,7 @@ Registers the `font` token type. Provides:
 - Google Fonts integration (opt-in)
 - Optionally: font size base + modular scale ratio
 
-**Status:** Not started. Build color sub-module first.
+**Status:** Scaffolded. Build and test after color sub-module is stable.
 
 ---
 
@@ -269,12 +269,12 @@ Opera is the reference implementation and primary test case.
 - All CSS files updated to reference new token names
 
 ### What remains
-- Remove `color.inc` once Theme Tokens is stable (Color module dependency gone)
+- Remove `color.inc` once Design Tokens is stable (Color module dependency gone)
 - Remove color fieldsets from `theme-settings.php`
 - Add link to `admin/appearance/tokens/opera` from theme settings page
-- Add font tokens to `tokens.inc` once `theme_tokens_font` sub-module exists
+- Add font tokens to `tokens.inc` once `design_tokens_font` sub-module is ready
 
-### Token naming (Color module → Theme Tokens)
+### Token naming (Color module → Design Tokens)
 
 | Old (`opera-variables.css`) | New token name | CSS custom property |
 |---|---|---|
@@ -293,14 +293,14 @@ Opera is the reference implementation and primary test case.
 Not a priority for v1 but keep the door open. A migration path would:
 - Read existing `color.inc` scheme definitions
 - Map color fields to token names via a theme-provided mapping
-- Import saved Color module values into Theme Tokens config
+- Import saved Color module values into Design Tokens config
 
 ---
 
 ## Development Notes
 
 - Developed in the Opera dev environment at:
-  `/home/tim/sites/ddev/backdrop/opera-dev/docroot/modules/theme_tokens`
+  `/home/tim/sites/ddev/backdrop/opera-dev/docroot/modules/design_tokens`
 - Independent project — separate repo from Opera
 - Opera is used purely as the test theme during development
 - Use `bee` as preferred CLI tool for Backdrop operations
@@ -311,11 +311,11 @@ Not a priority for v1 but keep the door open. A migration path would:
 
 ## Build Order
 
-1. ~~`theme_tokens.info`~~ ✓
-2. ~~`theme_tokens.module`~~ ✓ (needs refactor: extract color-specific code to sub-module)
-3. ~~`theme_tokens.admin.inc`~~ ✓ (needs refactor: delegate field rendering to sub-modules)
-4. ~~`js/theme-tokens-admin.js`~~ ✓
+1. ~~`design_tokens.info`~~ ✓
+2. ~~`design_tokens.module`~~ ✓
+3. ~~`design_tokens.admin.inc`~~ ✓
+4. ~~`js/design-tokens-admin.js`~~ ✓
 5. ~~Opera `tokens.inc`~~ ✓
-6. `theme_tokens_color` sub-module — move color field logic here, add `hook_theme_tokens_types()`
+6. ~~`design_tokens_color` sub-module~~ ✓
 7. Test end-to-end with Opera
-8. `theme_tokens_font` sub-module (later)
+8. `design_tokens_font` sub-module (later)

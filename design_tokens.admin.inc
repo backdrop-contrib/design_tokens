@@ -1,17 +1,17 @@
 <?php
 /**
  * @file
- * Admin pages and forms for Theme Tokens.
+ * Admin pages and forms for Design Tokens.
  */
 
 /**
- * Overview page listing all themes that support Theme Tokens.
+ * Overview page listing all themes that support Design Tokens.
  */
-function theme_tokens_overview_page() {
-  $themes = theme_tokens_get_supported_themes();
+function design_tokens_overview_page() {
+  $themes = design_tokens_get_supported_themes();
 
   if (empty($themes)) {
-    return '<p>' . t('No themes currently support Theme Tokens. Themes can add support by providing a <code>tokens.inc</code> file in their root directory.') . '</p>';
+    return '<p>' . t('No themes currently support Design Tokens. Themes can add support by providing a <code>tokens.inc</code> file in their root directory.') . '</p>';
   }
 
   $rows = array();
@@ -37,33 +37,33 @@ function theme_tokens_overview_page() {
  * @param string $theme_name
  *   The machine name of the theme.
  */
-function theme_tokens_settings_form($form, &$form_state, $theme_name) {
-  $info = theme_tokens_load_info($theme_name);
+function design_tokens_settings_form($form, &$form_state, $theme_name) {
+  $info = design_tokens_load_info($theme_name);
   if (empty($info)) {
-    backdrop_set_message(t('Theme %theme does not support Theme Tokens.', array('%theme' => $theme_name)), 'error');
+    backdrop_set_message(t('Theme %theme does not support Design Tokens.', array('%theme' => $theme_name)), 'error');
     return $form;
   }
 
-  $current_values = theme_tokens_get_values($theme_name);
+  $current_values = design_tokens_get_values($theme_name);
   $groups = isset($info['groups']) ? $info['groups'] : array();
   $tokens = isset($info['tokens']) ? $info['tokens'] : array();
   $schemes = isset($info['schemes']) ? $info['schemes'] : array();
-  $types = theme_tokens_get_types();
+  $types = design_tokens_get_types();
 
   $form['#theme_name'] = $theme_name;
 
-  // Link to theme settings for options not managed by Theme Tokens.
+  // Link to theme settings for options not managed by Design Tokens.
   $settings_url = url('admin/appearance/settings/' . $theme_name);
   $form['settings_link'] = array(
     '#type' => 'markup',
-    '#markup' => '<p class="theme-tokens-nav-link">' . t('For other theme options, see <a href="!url">theme settings</a>.', array('!url' => $settings_url)) . '</p>',
+    '#markup' => '<p class="design-tokens-nav-link">' . t('For other theme options, see <a href="!url">theme settings</a>.', array('!url' => $settings_url)) . '</p>',
     '#weight' => -250,
   );
 
   // Collapse/expand all toggle button.
   $form['collapse_toggle'] = array(
     '#type' => 'markup',
-    '#markup' => '<button type="button" id="theme-tokens-collapse-all" class="button">' . t('Collapse all') . '</button>',
+    '#markup' => '<button type="button" id="design-tokens-collapse-all" class="button">' . t('Collapse all') . '</button>',
     '#weight' => -200,
   );
 
@@ -79,13 +79,13 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
       '#title' => t('Preset scheme'),
       '#options' => $scheme_options,
       '#default_value' => '',
-      '#attributes' => array('id' => 'theme-tokens-scheme-select'),
+      '#attributes' => array('id' => 'design-tokens-scheme-select'),
       '#attached' => array(
         'js' => array(
           array(
             'type' => 'setting',
             'data' => array(
-              'themeTokens' => array(
+              'designTokens' => array(
                 'schemes' => $schemes,
               ),
             ),
@@ -145,14 +145,14 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
     if ($description) {
       $form[$group_key]['_description'] = array(
         '#type' => 'markup',
-        '#markup' => '<p class="theme-tokens-group-description">' . $description . '</p>',
+        '#markup' => '<p class="design-tokens-group-description">' . $description . '</p>',
         '#weight' => -100,
       );
     }
     $first_group = FALSE;
 
     foreach ($grouped[$group_key] as $token_name => $token) {
-      $form[$group_key][$token_name] = theme_tokens_build_field(
+      $form[$group_key][$token_name] = design_tokens_build_field(
         $token_name, $token, $current_values, $types
       );
     }
@@ -167,7 +167,7 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
       '#collapsed' => TRUE,
     );
     foreach ($ungrouped as $token_name => $token) {
-      $form['ungrouped'][$token_name] = theme_tokens_build_field(
+      $form['ungrouped'][$token_name] = design_tokens_build_field(
         $token_name, $token, $current_values, $types
       );
     }
@@ -181,7 +181,7 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
   $form['actions']['reset'] = array(
     '#type' => 'submit',
     '#value' => t('Reset to defaults'),
-    '#submit' => array('theme_tokens_settings_form_reset'),
+    '#submit' => array('design_tokens_settings_form_reset'),
     '#limit_validation_errors' => array(),
   );
 
@@ -189,19 +189,19 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
   $preview_url = url('<front>', array('absolute' => TRUE));
   $form['preview'] = array(
     '#type' => 'markup',
-    '#markup' => '<button type="button" id="theme-tokens-preview-toggle" class="button">' . t('Show preview') . '</button>'
-      . '<div id="theme-tokens-preview-panel" hidden>'
-      . '<div class="theme-tokens-preview-header">'
+    '#markup' => '<button type="button" id="design-tokens-preview-toggle" class="button">' . t('Show preview') . '</button>'
+      . '<div id="design-tokens-preview-panel" hidden>'
+      . '<div class="design-tokens-preview-header">'
       . '<span>' . t('Live preview') . '</span>'
-      . '<button type="button" id="theme-tokens-preview-close">&times;</button>'
+      . '<button type="button" id="design-tokens-preview-close">&times;</button>'
       . '</div>'
-      . '<iframe id="theme-tokens-preview-iframe" src="' . check_plain($preview_url) . '" title="' . t('Live preview') . '"></iframe>'
+      . '<iframe id="design-tokens-preview-iframe" src="' . check_plain($preview_url) . '" title="' . t('Live preview') . '"></iframe>'
       . '</div>',
     '#weight' => -100,
   );
 
-  $form['#attached']['js'][] = backdrop_get_path('module', 'theme_tokens') . '/js/theme-tokens-admin.js';
-  $form['#attached']['css'][] = backdrop_get_path('module', 'theme_tokens') . '/css/theme-tokens-admin.css';
+  $form['#attached']['js'][] = backdrop_get_path('module', 'design_tokens') . '/js/design-tokens-admin.js';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'design_tokens') . '/css/design-tokens-admin.css';
 
   return $form;
 }
@@ -215,12 +215,12 @@ function theme_tokens_settings_form($form, &$form_state, $theme_name) {
  * @param array $current_values
  *   Current saved/default values keyed by token name.
  * @param array $types
- *   Registered token types from theme_tokens_get_types().
+ *   Registered token types from design_tokens_get_types().
  *
  * @return array
  *   A form element.
  */
-function theme_tokens_build_field($token_name, array $token, array $current_values, array $types) {
+function design_tokens_build_field($token_name, array $token, array $current_values, array $types) {
   $type = isset($token['type']) ? $token['type'] : '';
 
   // Delegate to the sub-module's field callback if available.
@@ -243,9 +243,9 @@ function theme_tokens_build_field($token_name, array $token, array $current_valu
 /**
  * Form submit handler — saves token values.
  */
-function theme_tokens_settings_form_submit($form, &$form_state) {
+function design_tokens_settings_form_submit($form, &$form_state) {
   $theme_name = $form['#theme_name'];
-  $info = theme_tokens_load_info($theme_name);
+  $info = design_tokens_load_info($theme_name);
   $tokens = isset($info['tokens']) ? $info['tokens'] : array();
 
   $values = array();
@@ -259,15 +259,15 @@ function theme_tokens_settings_form_submit($form, &$form_state) {
     }
   }
 
-  theme_tokens_save_values($theme_name, $values);
+  design_tokens_save_values($theme_name, $values);
   backdrop_set_message(t('Token settings saved.'));
 }
 
 /**
  * Form submit handler — resets tokens to defaults.
  */
-function theme_tokens_settings_form_reset($form, &$form_state) {
+function design_tokens_settings_form_reset($form, &$form_state) {
   $theme_name = $form['#theme_name'];
-  theme_tokens_save_values($theme_name, array());
+  design_tokens_save_values($theme_name, array());
   backdrop_set_message(t('Token settings reset to defaults.'));
 }

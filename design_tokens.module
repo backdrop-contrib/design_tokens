@@ -1,25 +1,25 @@
 <?php
 /**
  * @file
- * Theme Tokens module.
+ * Design Tokens module.
  *
  * Provides the infrastructure for CSS custom property-based theme
  * configuration. This module handles token discovery, config storage, and
  * CSS injection. Sub-modules register token types (color, font, etc.) and
  * provide the field UI for editing them.
  *
- * @see theme_tokens_color.module
- * @see theme_tokens_font.module
+ * @see design_tokens_color.module
+ * @see design_tokens_font.module
  */
 
 /**
  * Implements hook_permission().
  */
-function theme_tokens_permission() {
+function design_tokens_permission() {
   return array(
-    'administer theme tokens' => array(
-      'title' => t('Administer Theme Tokens'),
-      'description' => t('Configure token values for themes that support Theme Tokens.'),
+    'administer design tokens' => array(
+      'title' => t('Administer Design Tokens'),
+      'description' => t('Configure token values for themes that support Design Tokens.'),
     ),
   );
 }
@@ -27,13 +27,13 @@ function theme_tokens_permission() {
 /**
  * Implements hook_menu().
  */
-function theme_tokens_menu() {
+function design_tokens_menu() {
   $items['admin/appearance/tokens'] = array(
-    'title' => 'Theme Tokens',
-    'description' => 'Configure tokens for themes that support Theme Tokens.',
-    'page callback' => 'theme_tokens_overview_page',
-    'access arguments' => array('administer theme tokens'),
-    'file' => 'theme_tokens.admin.inc',
+    'title' => 'Design Tokens',
+    'description' => 'Configure tokens for themes that support Design Tokens.',
+    'page callback' => 'design_tokens_overview_page',
+    'access arguments' => array('administer design tokens'),
+    'file' => 'design_tokens.admin.inc',
   );
 
   return $items;
@@ -44,15 +44,15 @@ function theme_tokens_menu() {
  *
  * Registers a settings page for each theme that declares a tokens.inc file.
  */
-function theme_tokens_menu_alter(&$items) {
-  foreach (theme_tokens_get_supported_themes() as $theme_name => $theme) {
+function design_tokens_menu_alter(&$items) {
+  foreach (design_tokens_get_supported_themes() as $theme_name => $theme) {
     $items['admin/appearance/tokens/' . $theme_name] = array(
       'title' => t('!theme tokens', array('!theme' => $theme->info['name'])),
       'page callback' => 'backdrop_get_form',
-      'page arguments' => array('theme_tokens_settings_form', $theme_name),
-      'access arguments' => array('administer theme tokens'),
-      'file' => 'theme_tokens.admin.inc',
-      'file path' => backdrop_get_path('module', 'theme_tokens'),
+      'page arguments' => array('design_tokens_settings_form', $theme_name),
+      'access arguments' => array('administer design tokens'),
+      'file' => 'design_tokens.admin.inc',
+      'file path' => backdrop_get_path('module', 'design_tokens'),
       'type' => MENU_NORMAL_ITEM,
     );
   }
@@ -61,19 +61,19 @@ function theme_tokens_menu_alter(&$items) {
 /**
  * Implements hook_js_alter().
  *
- * Loads the postMessage listener on all pages for themes that support Theme
+ * Loads the postMessage listener on all pages for themes that support Design
  * Tokens, so the preview iframe can receive and apply live token updates.
  * Uses hook_js_alter() because $theme is reliably set at this point.
  */
-function theme_tokens_js_alter(&$javascript) {
+function design_tokens_js_alter(&$javascript) {
   global $theme;
 
-  $info = theme_tokens_load_info($theme);
+  $info = design_tokens_load_info($theme);
   if (empty($info)) {
     return;
   }
 
-  $path = backdrop_get_path('module', 'theme_tokens') . '/js/theme-tokens-preview-listener.js';
+  $path = backdrop_get_path('module', 'design_tokens') . '/js/design-tokens-preview-listener.js';
   $javascript[$path] = array(
     'data'        => $path,
     'type'        => 'file',
@@ -101,10 +101,10 @@ function theme_tokens_js_alter(&$javascript) {
  * $info['variables_file'] = 'css/opera-variables.css';
  * @endcode
  */
-function theme_tokens_css_alter(&$css) {
+function design_tokens_css_alter(&$css) {
   global $theme;
 
-  $info = theme_tokens_load_info($theme);
+  $info = design_tokens_load_info($theme);
   if (empty($info)) {
     return;
   }
@@ -119,7 +119,7 @@ function theme_tokens_css_alter(&$css) {
   }
 
   // Inject token values as inline CSS to replace the removed file.
-  $values = theme_tokens_get_values($theme);
+  $values = design_tokens_get_values($theme);
   if (empty($values)) {
     return;
   }
@@ -137,7 +137,7 @@ function theme_tokens_css_alter(&$css) {
     return;
   }
 
-  $css['theme_tokens_vars'] = array(
+  $css['design_tokens_vars'] = array(
     'data'        => ":root {\n" . implode("\n", $properties) . "\n}",
     'type'        => 'inline',
     'group'       => CSS_THEME,
@@ -153,7 +153,7 @@ function theme_tokens_css_alter(&$css) {
  * Returns all registered token types provided by sub-modules.
  *
  * Each token type is provided by a sub-module implementing
- * hook_theme_tokens_types(). The parent module uses this to delegate
+ * hook_design_tokens_types(). The parent module uses this to delegate
  * field rendering to the appropriate sub-module.
  *
  * @return array
@@ -162,10 +162,10 @@ function theme_tokens_css_alter(&$css) {
  *   - 'label': Human-readable type name.
  *   - 'field callback': Function to call to build the form element.
  */
-function theme_tokens_get_types() {
+function design_tokens_get_types() {
   $types = &backdrop_static(__FUNCTION__);
   if (!isset($types)) {
-    $types = module_invoke_all('theme_tokens_types');
+    $types = module_invoke_all('design_tokens_types');
   }
   return $types;
 }
@@ -179,7 +179,7 @@ function theme_tokens_get_types() {
  * @return array|false
  *   The $info array from tokens.inc, or FALSE if not found.
  */
-function theme_tokens_load_info($theme_name) {
+function design_tokens_load_info($theme_name) {
   $cache = &backdrop_static(__FUNCTION__, array());
 
   if (isset($cache[$theme_name])) {
@@ -204,7 +204,7 @@ function theme_tokens_load_info($theme_name) {
   include $tokens_file;
 
   // Call module alter hooks and the active theme's alter (if any).
-  backdrop_alter('theme_tokens_info', $info, $theme_name);
+  backdrop_alter('design_tokens_info', $info, $theme_name);
 
   // If the target theme is not the currently active theme (e.g., when viewing
   // the admin UI under a different admin theme), backdrop_alter() will not
@@ -216,7 +216,7 @@ function theme_tokens_load_info($theme_name) {
     if (file_exists($template_file)) {
       include_once $template_file;
     }
-    $alter_function = $theme_name . '_theme_tokens_info_alter';
+    $alter_function = $theme_name . '_design_tokens_info_alter';
     if (function_exists($alter_function)) {
       $alter_function($info, $theme_name);
     }
@@ -232,7 +232,7 @@ function theme_tokens_load_info($theme_name) {
  * @return array
  *   Keyed by theme machine name, values are theme objects.
  */
-function theme_tokens_get_supported_themes() {
+function design_tokens_get_supported_themes() {
   $cache = &backdrop_static(__FUNCTION__);
 
   if (isset($cache)) {
@@ -241,7 +241,7 @@ function theme_tokens_get_supported_themes() {
 
   $cache = array();
   foreach (list_themes() as $name => $theme) {
-    if ($theme->status && theme_tokens_load_info($name) !== FALSE) {
+    if ($theme->status && design_tokens_load_info($name) !== FALSE) {
       $cache[$name] = $theme;
     }
   }
@@ -260,8 +260,8 @@ function theme_tokens_get_supported_themes() {
  * @return array
  *   Keyed by token name, values are CSS values (e.g. hex color strings).
  */
-function theme_tokens_get_values($theme_name) {
-  $info = theme_tokens_load_info($theme_name);
+function design_tokens_get_values($theme_name) {
+  $info = design_tokens_load_info($theme_name);
   if (empty($info['tokens'])) {
     return array();
   }
@@ -290,7 +290,7 @@ function theme_tokens_get_values($theme_name) {
  * @param array $values
  *   Keyed by token name, values are CSS values.
  */
-function theme_tokens_save_values($theme_name, array $values) {
+function design_tokens_save_values($theme_name, array $values) {
   $config = config('theme.tokens.' . $theme_name);
   $config->set('tokens', $values);
   $config->save();

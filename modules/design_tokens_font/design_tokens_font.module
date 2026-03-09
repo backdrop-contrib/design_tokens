@@ -1,21 +1,21 @@
 <?php
 /**
  * @file
- * Theme Tokens: Font sub-module.
+ * Design Tokens: Font sub-module.
  *
- * Registers the 'font' token type with the Theme Tokens system and provides
+ * Registers the 'font' token type with the Design Tokens system and provides
  * a font family selection field with preset stacks and live preview.
  * Google Fonts are loaded dynamically based on which fonts are actually in use.
  */
 
 /**
- * Implements hook_theme_tokens_types().
+ * Implements hook_design_tokens_types().
  */
-function theme_tokens_font_theme_tokens_types() {
+function design_tokens_font_design_tokens_types() {
   return array(
     'font' => array(
       'label'          => t('Font'),
-      'field callback' => 'theme_tokens_font_build_field',
+      'field callback' => 'design_tokens_font_build_field',
     ),
   );
 }
@@ -29,7 +29,7 @@ function theme_tokens_font_theme_tokens_types() {
  *
  * @return array
  */
-function theme_tokens_font_get_presets() {
+function design_tokens_font_get_presets() {
   return array(
     array(
       'label' => t('Serif'),
@@ -98,9 +98,9 @@ function theme_tokens_font_get_presets() {
  * @return array
  *   Keyed by CSS font-family value string.
  */
-function theme_tokens_font_get_google_fonts_map() {
+function design_tokens_font_get_google_fonts_map() {
   $map = array();
-  foreach (theme_tokens_font_get_presets() as $group) {
+  foreach (design_tokens_font_get_presets() as $group) {
     foreach ($group['fonts'] as $font) {
       if (!empty($font['google_font'])) {
         $map[$font['value']] = $font['google_font'];
@@ -116,10 +116,10 @@ function theme_tokens_font_get_google_fonts_map() {
  * Loads Google Fonts stylesheets for any font tokens that use a Google Font,
  * combining them into a single request where possible.
  */
-function theme_tokens_font_preprocess_html(&$variables) {
+function design_tokens_font_preprocess_html(&$variables) {
   global $theme;
 
-  $info = theme_tokens_load_info($theme);
+  $info = design_tokens_load_info($theme);
   if (empty($info['tokens'])) {
     return;
   }
@@ -135,8 +135,8 @@ function theme_tokens_font_preprocess_html(&$variables) {
     return;
   }
 
-  $values = theme_tokens_get_values($theme);
-  $google_fonts_map = theme_tokens_font_get_google_fonts_map();
+  $values = design_tokens_get_values($theme);
+  $google_fonts_map = design_tokens_font_get_google_fonts_map();
 
   $family_specs = array();
   foreach ($font_token_names as $token_name) {
@@ -165,7 +165,7 @@ function theme_tokens_font_preprocess_html(&$variables) {
 /**
  * Field callback for the 'font' token type.
  */
-function theme_tokens_font_build_field($token_name, array $token, array $current_values) {
+function design_tokens_font_build_field($token_name, array $token, array $current_values) {
   $value = isset($current_values[$token_name]) ? $current_values[$token_name] : '';
 
   $element = array(
@@ -176,16 +176,16 @@ function theme_tokens_font_build_field($token_name, array $token, array $current
     '#maxlength' => 255,
     '#description' => t('Choose a font above or type a custom font name here.'),
     '#attributes' => array(
-      'class' => array('theme-tokens-font-field'),
+      'class' => array('design-tokens-font-field'),
       'data-token-name' => $token_name,
       'placeholder' => "e.g. 'Font Name', Georgia, serif",
     ),
     '#attached' => array(
       'js' => array(
-        backdrop_get_path('module', 'theme_tokens_font') . '/js/theme-tokens-font.js',
+        backdrop_get_path('module', 'design_tokens_font') . '/js/design-tokens-font.js',
       ),
       'css' => array(
-        backdrop_get_path('module', 'theme_tokens_font') . '/css/theme-tokens-font.css',
+        backdrop_get_path('module', 'design_tokens_font') . '/css/design-tokens-font.css',
       ),
     ),
   );
@@ -197,8 +197,8 @@ function theme_tokens_font_build_field($token_name, array $token, array $current
     $element['#attached']['js'][] = array(
       'type' => 'setting',
       'data' => array(
-        'themeTokensFont' => array(
-          'presets'     => theme_tokens_font_get_presets(),
+        'designTokensFont' => array(
+          'presets'     => design_tokens_font_get_presets(),
           'selectLabel' => t('— Choose a font —'),
           'customLabel' => t('Other'),
           'previewText' => t('The quick brown fox jumps over the lazy dog.'),

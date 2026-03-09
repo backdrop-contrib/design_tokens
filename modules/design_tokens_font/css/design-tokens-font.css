@@ -1,19 +1,19 @@
 /**
  * @file
- * Theme Tokens Font — admin field styles.
+ * Design Tokens Font — admin field styles.
  */
 
-.theme-tokens-font-select {
+.design-tokens-font-select {
   display: block;
   margin-bottom: 0.5rem;
   max-width: 24rem;
 }
 
-.theme-tokens-font-field {
+.design-tokens-font-field {
   max-width: 24rem;
 }
 
-.theme-tokens-font-preview {
+.design-tokens-font-preview {
   margin-top: 0.75rem;
   padding: 0.6rem 0.8rem;
   font-size: 1.15rem;
