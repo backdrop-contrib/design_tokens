@@ -3,4 +3,5 @@ description = Adds color token support to Design Tokens. Provides color pickers 
 type = module
 backdrop = 1.x
 dependencies[] = design_tokens
+package = Design Tokens
 

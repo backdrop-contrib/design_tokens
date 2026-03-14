@@ -1,0 +1,152 @@
+<?php
+/**
+ * @file
+ * Install and runtime requirements for Design Tokens: Color.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function design_tokens_color_requirements($phase) {
+  $requirements = array();
+
+  if ($phase !== 'runtime') {
+    return $requirements;
+  }
+
+  $failures = array();
+  $theme_name = config_get('system.core', 'theme_default');
+  $info = design_tokens_load_info($theme_name);
+
+  if (empty($info['tokens'])) {
+    return $requirements;
+  }
+
+  $values = design_tokens_get_values($theme_name);
+
+  foreach ($info['tokens'] as $token_name => $token) {
+    if (empty($token['type']) || $token['type'] !== 'color') {
+      continue;
+    }
+
+    $bg_hex = NULL;
+    $text_hex = NULL;
+    $pair_label = NULL;
+
+    // Text tokens: find the paired background by name convention.
+    // 'button-text' pairs with 'button-bg'; 'color-primary-text' with 'color-primary'.
+    if (substr($token_name, -5) === '-text') {
+      $base = substr($token_name, 0, -5);
+      if (!empty($values[$base . '-bg'])) {
+        $bg_hex   = $values[$base . '-bg'];
+        $text_hex = $values[$token_name];
+        $pair_label = $token_name . ' / ' . $base . '-bg';
+      }
+      elseif (!empty($values[$base])) {
+        $bg_hex   = $values[$base];
+        $text_hex = $values[$token_name];
+        $pair_label = $token_name . ' / ' . $base;
+      }
+    }
+
+    // Background tokens with a contrast_with hint.
+    if (!empty($token['contrast_with'])) {
+      $bg_hex = !empty($values[$token_name]) ? $values[$token_name] : NULL;
+      if ($bg_hex) {
+        if ($token['contrast_with'] === 'auto') {
+          // Pick whichever auto-text token has better contrast — mirrors JS logic.
+          $dark  = !empty($values['color-text-default'])  ? $values['color-text-default']  : '#1a1a1a';
+          $light = !empty($values['color-text-inverted']) ? $values['color-text-inverted'] : '#ffffff';
+          $ratio_dark  = _design_tokens_color_contrast($bg_hex, $dark);
+          $ratio_light = _design_tokens_color_contrast($bg_hex, $light);
+          if ($ratio_dark >= $ratio_light) {
+            $text_hex   = $dark;
+            $pair_label = $token_name . ' / color-text-default (auto)';
+          }
+          else {
+            $text_hex   = $light;
+            $pair_label = $token_name . ' / color-text-inverted (auto)';
+          }
+        }
+        else {
+          $named = $token['contrast_with'];
+          if (!empty($values[$named])) {
+            $text_hex   = $values[$named];
+            $pair_label = $token_name . ' / ' . $named;
+          }
+        }
+      }
+    }
+
+    if ($bg_hex && $text_hex && $pair_label) {
+      $ratio = _design_tokens_color_contrast($bg_hex, $text_hex);
+      if ($ratio < 4.5) {
+        $failures[] = array(
+          'label' => $pair_label,
+          'ratio' => round($ratio, 1),
+        );
+      }
+    }
+  }
+
+  $tokens_url = url('admin/appearance/tokens/' . $theme_name);
+  $theme_label = check_plain($theme_name);
+
+  if (!empty($failures)) {
+    $items = array();
+    foreach ($failures as $f) {
+      $items[] = $f['label'] . ' — ' . $f['ratio'] . ':1';
+    }
+    $list = theme('item_list', array('items' => $items));
+    $requirements['design_tokens_contrast'] = array(
+      'title'       => t('Design Tokens color contrast'),
+      'value'       => format_plural(count($failures), '1 color pair fails WCAG AA in the @theme theme', '@count color pairs fail WCAG AA in the @theme theme', array('@theme' => $theme_label)),
+      'description' => t('The following color combinations do not meet the 4.5:1 contrast ratio required by WCAG AA. Text may be hard to read for people with low vision. <a href="!url">Edit tokens</a> to correct them.', array('!url' => $tokens_url)) . $list,
+      'severity'    => REQUIREMENT_WARNING,
+    );
+  }
+  else {
+    $requirements['design_tokens_contrast'] = array(
+      'title'    => t('Design Tokens color contrast'),
+      'value'    => t('All color pairs in the @theme theme pass WCAG AA', array('@theme' => $theme_label)),
+      'severity' => REQUIREMENT_OK,
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Returns the WCAG 2.1 contrast ratio between two hex color strings.
+ *
+ * @param string $hex1
+ * @param string $hex2
+ *
+ * @return float
+ */
+function _design_tokens_color_contrast($hex1, $hex2) {
+  $l1 = _design_tokens_color_luminance($hex1);
+  $l2 = _design_tokens_color_luminance($hex2);
+  return (max($l1, $l2) + 0.05) / (min($l1, $l2) + 0.05);
+}
+
+/**
+ * Returns the relative luminance of a hex color (WCAG 2.1).
+ *
+ * @param string $hex  e.g. '#6e0e0a' or '6e0e0a'
+ *
+ * @return float  Luminance between 0 and 1.
+ */
+function _design_tokens_color_luminance($hex) {
+  $hex = ltrim($hex, '#');
+  $channels = array(
+    hexdec(substr($hex, 0, 2)) / 255,
+    hexdec(substr($hex, 2, 2)) / 255,
+    hexdec(substr($hex, 4, 2)) / 255,
+  );
+  $linear = array();
+  foreach ($channels as $c) {
+    $linear[] = $c <= 0.03928 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+  }
+  return 0.2126 * $linear[0] + 0.7152 * $linear[1] + 0.0722 * $linear[2];
+}

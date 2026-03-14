@@ -3,4 +3,5 @@ description = Adds font token support to Design Tokens. Provides font family sel
 type = module
 backdrop = 1.x
 dependencies[] = design_tokens
+package = Design Tokens
 

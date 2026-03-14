@@ -29,7 +29,7 @@ function design_tokens_color_form_design_tokens_settings_form_alter(&$form, &$fo
   $form['contrast_help'] = array(
     '#markup' => '<details class="dt-contrast-help">'
       . '<summary>' . t('About the contrast ratings') . '</summary>'
-      . '<p>' . t('The colored badges next to each text color show how readable that color is against its paired background — an accessibility check for people with low vision or color blindness.') . '</p>'
+      . '<p>' . t('The colored badges show how readable text will be against its background — an accessibility check for people with low vision or color blindness. Badges appear next to text color fields (showing contrast against their paired background) and next to background-only fields like card and block colors (showing contrast against the text color the theme will automatically choose).') . '</p>'
       . '<ul>'
       . '<li><strong>' . t('AAA (7:1 or higher)') . '</strong> — ' . t('Excellent contrast. Exceeds the highest accessibility standard. Ideal for all text.') . '</li>'
       . '<li><strong>' . t('AA (4.5:1 or higher)') . '</strong> — ' . t('Good contrast. Meets the standard for normal body text. Aim for this at minimum.') . '</li>'
@@ -60,16 +60,21 @@ function design_tokens_color_build_field($token_name, array $token, array $curre
   // Normalize to lowercase hex so the native color picker can read the value.
   $value = isset($current_values[$token_name]) ? strtolower($current_values[$token_name]) : '';
 
+  $attributes = array(
+    'class' => array('design-tokens-color-field'),
+    'data-token-name' => $token_name,
+  );
+  if (!empty($token['contrast_with'])) {
+    $attributes['data-contrast-with'] = $token['contrast_with'];
+  }
+
   return array(
     '#type' => 'textfield',
     '#title' => isset($token['label']) ? $token['label'] : $token_name,
     '#default_value' => $value,
     '#size' => 10,
     '#maxlength' => 7,
-    '#attributes' => array(
-      'class' => array('design-tokens-color-field'),
-      'data-token-name' => $token_name,
-    ),
+    '#attributes' => $attributes,
     '#attached' => array(
       'js' => array(
         backdrop_get_path('module', 'design_tokens_color') . '/js/design-tokens-color.js',

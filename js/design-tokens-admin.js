@@ -59,6 +59,23 @@
         setTimeout(function () { applyingScheme = false; }, 0);
       });
 
+      // Per-section reset — resets all token fields in a group to their defaults.
+      $('.design-tokens-reset-section', context).once('design-tokens-reset-section').on('click', function () {
+        var groupKey = $(this).data('group');
+        var defaults = (settings.designTokens && settings.designTokens.defaults) ? settings.designTokens.defaults : {};
+        var $fieldset = $(this).closest('fieldset');
+
+        $fieldset.find('[data-token-name]').each(function () {
+          var tokenName = $(this).data('token-name');
+          if (defaults.hasOwnProperty(tokenName)) {
+            $(this).val(defaults[tokenName]).trigger('change');
+          }
+        });
+
+        // Mark the scheme selector as Custom since values may have changed.
+        $('#design-tokens-scheme-select').val('');
+      });
+
       // Reset the scheme selector to Custom when any field is manually edited.
       // This ensures the selector accurately reflects whether the current values
       // match a preset or have been customised.

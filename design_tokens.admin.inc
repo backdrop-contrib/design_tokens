@@ -77,8 +77,10 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     $form['scheme'] = array(
       '#type' => 'select',
       '#title' => t('Preset scheme'),
+      '#description' => t('Choose a preset to load a curated set of colors. Selecting a preset overwrites the color fields below. <em>— Custom —</em> appears when you have modified any colors individually.'),
       '#options' => $scheme_options,
       '#default_value' => design_tokens_get_scheme($theme_name),
+      '#weight' => -150,
       '#attributes' => array('id' => 'design-tokens-scheme-select'),
       '#attached' => array(
         'js' => array(
@@ -94,6 +96,22 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
       ),
     );
   }
+
+  // Build a defaults map keyed by token name for use by the JS reset buttons.
+  $defaults = array();
+  foreach ($tokens as $token_name => $token) {
+    if (isset($token['default'])) {
+      $defaults[$token_name] = $token['default'];
+    }
+  }
+  $form['#attached']['js'][] = array(
+    'type' => 'setting',
+    'data' => array(
+      'designTokens' => array(
+        'defaults' => $defaults,
+      ),
+    ),
+  );
 
   // Sort tokens into groups.
   $ungrouped = array();
@@ -115,11 +133,13 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     }
   }
 
-  // Render grouped tokens as fieldsets. First group is expanded and floated
-  // above the preset scheme selector via a negative weight; rest are collapsed.
+  // Render grouped tokens as fieldsets. Groups are assigned sequential
+  // negative weights so they render in tokens.inc declaration order. The first
+  // group gets the most negative weight and is expanded; the rest are collapsed.
   // Groups can be either a simple string label or an array with 'label' and
   // optional 'description' keys.
   $first_group = TRUE;
+  $group_weight = -10;
   foreach ($groups as $group_key => $group_def) {
     if (empty($grouped[$group_key])) {
       continue;
@@ -140,7 +160,7 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
       '#title' => $label,
       '#collapsible' => TRUE,
       '#collapsed' => !$first_group,
-      '#weight' => $first_group ? -10 : 0,
+      '#weight' => $group_weight++,
     );
     if ($description) {
       $form[$group_key]['_description'] = array(
@@ -149,6 +169,13 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
         '#weight' => -100,
       );
     }
+
+    $form[$group_key]['_reset'] = array(
+      '#type' => 'markup',
+      '#markup' => '<button type="button" class="design-tokens-reset-section button button-secondary" data-group="' . check_plain($group_key) . '">' . t('Reset to defaults') . '</button>',
+      '#weight' => 100,
+    );
+
     $first_group = FALSE;
 
     foreach ($grouped[$group_key] as $token_name => $token) {

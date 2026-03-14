@@ -18,6 +18,14 @@
   color: #555;
 }
 
+/* Keep the group indicator dot on the same line as the fieldset title.
+   Backdrop's admin theme makes .fieldset-title display:block, which pushes
+   any following inline element to the next line. Flex corrects this. */
+#design-tokens-settings-form .fieldset-legend {
+  display: flex;
+  align-items: center;
+}
+
 /* Group description text inside fieldsets. */
 .design-tokens-group-description {
   color: #555;

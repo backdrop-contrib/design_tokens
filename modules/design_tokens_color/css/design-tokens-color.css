@@ -91,3 +91,24 @@
   background: #c62828;
   color: #fff;
 }
+
+/* Group indicator dot — shown in the fieldset legend when a group contains
+   contrast issues. Invisible when no modifier class is present. */
+.dt-group-indicator {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  margin-left: 0.6em;
+  vertical-align: middle;
+  position: relative;
+  top: -0.1em;
+}
+
+.dt-group-indicator--fail {
+  background: #c62828;
+}
+
+.dt-group-indicator--large {
+  background: #e65100;
+}
