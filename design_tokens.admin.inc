@@ -60,6 +60,36 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     '#weight' => -250,
   );
 
+  // Sub-module status — shown if the theme declares submodules in tokens.inc.
+  // Collapsed by default to save space; expand to see status and descriptions.
+  if (!empty($info['submodules'])) {
+    $rows = array();
+    foreach ($info['submodules'] as $sub) {
+      $enabled = module_exists($sub['machine']);
+      $status = $enabled
+        ? '<span style="color: green; font-weight: bold;">' . t('Enabled') . '</span>'
+        : '<span style="color: #999;">' . t('Not enabled') . '</span>';
+      $rows[] = array(
+        check_plain($sub['name']),
+        check_plain($sub['description']),
+        array('data' => $status, 'style' => 'white-space: nowrap;'),
+      );
+    }
+    $table = theme('table', array(
+      'header' => array(t('Sub-module'), t('What it does'), t('Status')),
+      'rows'   => $rows,
+    ));
+    $form['submodule_status'] = array(
+      '#type'   => 'markup',
+      '#markup' => '<details style="margin-bottom: 1em;">'
+        . '<summary style="cursor: pointer;">' . t('Available sub-modules') . '</summary>'
+        . '<p style="margin-top: 0.5em;">' . t('Enable or disable sub-modules at <a href="!url">Functionality &rsaquo; Modules</a>.', array('!url' => url('admin/modules'))) . '</p>'
+        . $table
+        . '</details>',
+      '#weight' => -225,
+    );
+  }
+
   // Collapse/expand all toggle button.
   $form['collapse_toggle'] = array(
     '#type' => 'markup',
