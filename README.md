@@ -11,10 +11,12 @@ works by doing fragile string replacement on CSS files.
 Design Tokens stores values inBackdrop config, injects a single `:root {}` block in `<head>`, 
 and never rewrites any files.
 
+```
   :root {
     --color-primary: #6e0e0a;
     --color-primary-text: #fff6ff;
   }
+```
 
 The theme's CSS is written to use those variable names — color: var(--color-primary) —
 rather than hardcoded values. When an admin changes a color, Design Tokens just updates that
