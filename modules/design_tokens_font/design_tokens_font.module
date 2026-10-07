@@ -24,8 +24,11 @@ function design_tokens_font_design_tokens_types() {
  * Returns grouped font preset stacks.
  *
  * Each Google Font entry includes a 'google_font' key containing the Google
- * Fonts CSS2 API family spec (e.g. "Merriweather:ital,wght@0,300;0,400;0,700").
+ * Fonts CSS2 API family spec (e.g. "Lora:ital,wght@0,400;0,700;1,400;1,700").
  * This is used both to load the font on the front end and for admin preview.
+ * Include the italic styles (1,400 and 1,700) when the font has them, so
+ * browsers don't fake italics by slanting the upright letters. Don't request
+ * italics for a font without them: Google Fonts rejects the whole request.
  *
  * @return array
  */
@@ -37,17 +40,17 @@ function design_tokens_font_get_presets() {
         array(
           'value'       => "'Merriweather', Georgia, serif",
           'label'       => 'Merriweather',
-          'google_font' => 'Merriweather:ital,wght@0,300;0,400;0,700;1,400',
+          'google_font' => 'Merriweather:ital,wght@0,300;0,400;0,700;1,400;1,700',
         ),
         array(
           'value'       => "'Playfair Display', Georgia, serif",
           'label'       => 'Playfair Display',
-          'google_font' => 'Playfair+Display:ital,wght@0,400;0,700;1,400',
+          'google_font' => 'Playfair+Display:ital,wght@0,400;0,700;1,400;1,700',
         ),
         array(
           'value'       => "'Lora', Georgia, serif",
           'label'       => 'Lora',
-          'google_font' => 'Lora:ital,wght@0,400;0,700;1,400',
+          'google_font' => 'Lora:ital,wght@0,400;0,700;1,400;1,700',
         ),
         array(
           'value' => "Georgia, 'Times New Roman', serif",
@@ -61,27 +64,27 @@ function design_tokens_font_get_presets() {
         array(
           'value'       => "'Lato', 'Helvetica Neue', Arial, sans-serif",
           'label'       => 'Lato',
-          'google_font' => 'Lato:wght@300;400;700;900',
+          'google_font' => 'Lato:ital,wght@0,300;0,400;0,700;0,900;1,400;1,700',
         ),
         array(
           'value'       => "'Open Sans', 'Helvetica Neue', Arial, sans-serif",
           'label'       => 'Open Sans',
-          'google_font' => 'Open+Sans:wght@300;400;600;700',
+          'google_font' => 'Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400;1,700',
         ),
         array(
           'value'       => "'Roboto', 'Helvetica Neue', Arial, sans-serif",
           'label'       => 'Roboto',
-          'google_font' => 'Roboto:wght@300;400;500;700',
+          'google_font' => 'Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400;1,700',
         ),
         array(
           'value'       => "'Nunito', 'Helvetica Neue', Arial, sans-serif",
           'label'       => 'Nunito',
-          'google_font' => 'Nunito:wght@300;400;600;700',
+          'google_font' => 'Nunito:ital,wght@0,300;0,400;0,600;0,700;1,400;1,700',
         ),
         array(
           'value'       => "'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif",
           'label'       => 'Source Sans Pro',
-          'google_font' => 'Source+Sans+Pro:wght@300;400;600;700',
+          'google_font' => 'Source+Sans+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400;1,700',
         ),
         array(
           'value' => "'Helvetica Neue', Arial, Helvetica, sans-serif",
