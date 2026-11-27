@@ -90,6 +90,7 @@ Place a `tokens.inc` file in your theme's root directory. The module detects it 
 <?php
 $info = array(
   // Static CSS file to remove when Design Tokens is active (prevents duplicate variables).
+  // Can also be an array of files.
   'variables_file' => 'css/my-theme-variables.css',
 
   'groups' => array(
@@ -151,6 +152,10 @@ classes that site architects can apply to blocks in the layout editor's CSS clas
 
 The reference page at **Appearance > Design Tokens > [Theme] > Utility Classes** shows all
 available classes with live color swatches.
+
+### Subthemes
+
+A subtheme of a theme with a `tokens.inc` needs no `tokens.inc` of its own: the module uses the nearest base theme's file. The subtheme still gets its own settings page and saved values at `admin/appearance/tokens/SUBTHEME`. To change defaults or add tokens, implement `hook_design_tokens_info_alter()` in the subtheme's `template.php` and check that `$theme_name` is the subtheme. To remove an extra static variables file of the subtheme, add it to `variables_file`, which can be an array: each file is looked up in the folder of the active theme and of every base theme.
 
 ## Admin UI
 

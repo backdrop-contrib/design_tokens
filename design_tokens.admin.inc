@@ -285,9 +285,12 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
   // Auto-load a theme-specific admin JS file if the theme provides one.
   // Themes can create js/design-tokens-theme.js to customize preview behavior
   // for computed or derived CSS properties (e.g. auto-calculated text colors).
-  $theme_js = backdrop_get_path('theme', $theme_name) . '/js/design-tokens-theme.js';
-  if (file_exists(BACKDROP_ROOT . '/' . $theme_js)) {
-    $form['#attached']['js'][] = $theme_js;
+  // Base themes' files load first, so a subtheme can add to them.
+  foreach (design_tokens_get_theme_chain($theme_name) as $chain_theme) {
+    $theme_js = backdrop_get_path('theme', $chain_theme) . '/js/design-tokens-theme.js';
+    if (file_exists(BACKDROP_ROOT . '/' . $theme_js)) {
+      $form['#attached']['js'][] = $theme_js;
+    }
   }
 
   return $form;

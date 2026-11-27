@@ -100,6 +100,10 @@ function design_tokens_js_alter(&$javascript) {
  * @code
  * $info['variables_file'] = 'css/opera-variables.css';
  * @endcode
+ * The value may also be an array of files, so a subtheme can add its own
+ * static variables file to the one declared by its base theme. Each file is
+ * looked up in the folder of every theme in the active theme's chain (base
+ * themes first), and removed wherever it is found.
  */
 function design_tokens_css_alter(&$css) {
   global $theme;
@@ -111,10 +115,12 @@ function design_tokens_css_alter(&$css) {
 
   // Remove the theme's static variables file.
   if (!empty($info['variables_file'])) {
-    $theme_path = backdrop_get_path('theme', $theme);
-    $variables_file = $theme_path . '/' . $info['variables_file'];
-    if (isset($css[$variables_file])) {
-      unset($css[$variables_file]);
+    $variables_files = (array) $info['variables_file'];
+    foreach (design_tokens_get_theme_chain($theme) as $chain_theme) {
+      $theme_path = backdrop_get_path('theme', $chain_theme);
+      foreach ($variables_files as $variables_file) {
+        unset($css[$theme_path . '/' . $variables_file]);
+      }
     }
   }
 
@@ -171,6 +177,28 @@ function design_tokens_get_types() {
 }
 
 /**
+ * Returns a theme and its base themes, base themes first.
+ *
+ * @param string $theme_name
+ *   The machine name of the theme.
+ *
+ * @return array
+ *   Theme machine names, from the root base theme down to $theme_name. Base
+ *   themes that are missing from the system are skipped.
+ */
+function design_tokens_get_theme_chain($theme_name) {
+  $themes = list_themes();
+  $chain = array();
+
+  while (isset($themes[$theme_name]) && !in_array($theme_name, $chain)) {
+    array_unshift($chain, $theme_name);
+    $theme_name = isset($themes[$theme_name]->info['base theme']) ? $themes[$theme_name]->info['base theme'] : NULL;
+  }
+
+  return $chain;
+}
+
+/**
  * Loads the tokens.inc info array for a given theme.
  *
  * @param string $theme_name
@@ -192,16 +220,27 @@ function design_tokens_load_info($theme_name) {
     return FALSE;
   }
 
-  $theme_path = backdrop_get_path('theme', $theme_name);
-  $tokens_file = $theme_path . '/tokens.inc';
+  // Use the theme's own tokens.inc, or fall back to the nearest base theme
+  // that has one, so a subtheme inherits its base theme's token definitions.
+  $chain = design_tokens_get_theme_chain($theme_name);
+  $owner_theme = NULL;
+  foreach (array_reverse($chain) as $chain_theme) {
+    $chain_file = backdrop_get_path('theme', $chain_theme) . '/tokens.inc';
+    if (file_exists($chain_file)) {
+      $owner_theme = $chain_theme;
+      $tokens_file = $chain_file;
+      break;
+    }
+  }
 
-  if (!file_exists($tokens_file)) {
+  if (!$owner_theme) {
     $cache[$theme_name] = FALSE;
     return FALSE;
   }
 
   $info = array();
   include $tokens_file;
+  $info['owner_theme'] = $owner_theme;
 
   // Call module alter hooks and the active theme's alter (if any).
   backdrop_alter('design_tokens_info', $info, $theme_name);
@@ -210,15 +249,18 @@ function design_tokens_load_info($theme_name) {
   // the admin UI under a different admin theme), backdrop_alter() will not
   // have called the target theme's implementation. Include its template.php
   // and call the function directly.
+  // The theme's base themes are included too, base themes first.
   global $theme;
   if ($theme !== $theme_name) {
-    $template_file = BACKDROP_ROOT . '/' . $theme_path . '/template.php';
-    if (file_exists($template_file)) {
-      include_once $template_file;
-    }
-    $alter_function = $theme_name . '_design_tokens_info_alter';
-    if (function_exists($alter_function)) {
-      $alter_function($info, $theme_name);
+    foreach ($chain as $chain_theme) {
+      $template_file = BACKDROP_ROOT . '/' . backdrop_get_path('theme', $chain_theme) . '/template.php';
+      if (file_exists($template_file)) {
+        include_once $template_file;
+      }
+      $alter_function = $chain_theme . '_design_tokens_info_alter';
+      if (function_exists($alter_function)) {
+        $alter_function($info, $theme_name);
+      }
     }
   }
 
