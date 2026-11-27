@@ -103,3 +103,10 @@ body.design-tokens-preview-open .layout-container {
   width: 100%;
   border: none;
 }
+
+/* Note shown after a section's "Reset to defaults" button is clicked. */
+.design-tokens-reset-note {
+  display: inline-block;
+  margin-inline-start: 0.75em;
+  font-style: italic;
+}

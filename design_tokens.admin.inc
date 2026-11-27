@@ -372,10 +372,24 @@ function design_tokens_settings_form_submit($form, &$form_state) {
 
 /**
  * Form submit handler — resets tokens to defaults.
+ *
+ * Saves the theme's current defaults as the token values, instead of deleting
+ * the saved values. With no saved values, the site would follow the theme's
+ * defaults live, so a later theme update that changes a default would change
+ * this site too. Backdrop's rule is that new defaults only reach new sites.
  */
 function design_tokens_settings_form_reset($form, &$form_state) {
   $theme_name = $form['#theme_name'];
-  design_tokens_save_values($theme_name, array());
+  $info = design_tokens_load_info($theme_name);
+  $defaults = array();
+  if (!empty($info['tokens'])) {
+    foreach ($info['tokens'] as $token_name => $token) {
+      if (isset($token['default'])) {
+        $defaults[$token_name] = $token['default'];
+      }
+    }
+  }
+  design_tokens_save_values($theme_name, $defaults);
   design_tokens_save_scheme($theme_name, '');
   backdrop_set_message(t('Token settings reset to defaults.'));
 }

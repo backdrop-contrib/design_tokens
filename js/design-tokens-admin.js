@@ -74,6 +74,11 @@
 
         // Mark the scheme selector as Custom since values may have changed.
         $('#design-tokens-scheme-select').val('');
+
+        // The reset only fills in the fields; say that it still needs saving.
+        if (!$(this).next('.design-tokens-reset-note').length) {
+          $(this).after('<span class="design-tokens-reset-note" role="status">' + Backdrop.t('Reset to the default values. Click <em>Save tokens</em> to apply.') + '</span>');
+        }
       });
 
       // Reset the scheme selector to Custom when any field is manually edited.
