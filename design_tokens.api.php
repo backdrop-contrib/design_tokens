@@ -45,7 +45,12 @@ function hook_design_tokens_types() {
  *   - 'groups': array of group labels keyed by group machine name.
  *   - 'schemes': array of preset scheme definitions.
  * @param string $theme_name
- *   The machine name of the theme whose tokens are being loaded.
+ *   The machine name of the theme whose tokens are being loaded. When the
+ *   active theme (or any theme in its base theme chain) implements this hook
+ *   it is called for every theme whose tokens are loaded, so implementations
+ *   should check $theme_name. A subtheme's implementation is called with the
+ *   subtheme's name, so it can override the 'default' of a token declared by
+ *   its base theme.
  *
  * @see design_tokens_load_info()
  */
