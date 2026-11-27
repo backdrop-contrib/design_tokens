@@ -55,6 +55,15 @@ function design_tokens_menu_alter(&$items) {
       'file path' => backdrop_get_path('module', 'design_tokens'),
       'type' => MENU_NORMAL_ITEM,
     );
+    $items['admin/appearance/tokens/' . $theme_name . '/reset'] = array(
+      'title' => 'Reset all to defaults',
+      'page callback' => 'backdrop_get_form',
+      'page arguments' => array('design_tokens_reset_confirm_form', $theme_name),
+      'access arguments' => array('administer design tokens'),
+      'file' => 'design_tokens.admin.inc',
+      'file path' => backdrop_get_path('module', 'design_tokens'),
+      'type' => MENU_CALLBACK,
+    );
   }
 }
 

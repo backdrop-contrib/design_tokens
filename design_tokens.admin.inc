@@ -173,6 +173,23 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     }
   }
 
+  // Draw groups section by section, in the order the sections are declared,
+  // so a group added to a section (for example by a subtheme's alter hook,
+  // which appends it to the end of the groups list) appears inside that
+  // section instead of starting the section a second time. Groups that are
+  // in no section follow, in their own order.
+  if (!empty($info['sections'])) {
+    $ordered_groups = array();
+    foreach ($info['sections'] as $section) {
+      foreach ($section['groups'] as $group_key) {
+        if (isset($groups[$group_key])) {
+          $ordered_groups[$group_key] = $groups[$group_key];
+        }
+      }
+    }
+    $groups = $ordered_groups + $groups;
+  }
+
   // Render grouped tokens as fieldsets. Groups are assigned sequential
   // negative weights so they render in tokens.inc declaration order. The first
   // group gets the most negative weight and is expanded; the rest are collapsed.
@@ -259,7 +276,7 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
   );
   $form['actions']['reset'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset to defaults'),
+    '#value' => t('Reset all to defaults'),
     '#submit' => array('design_tokens_settings_form_reset'),
     '#limit_validation_errors' => array(),
   );
@@ -371,14 +388,43 @@ function design_tokens_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Form submit handler — resets tokens to defaults.
+ * Form submit handler for "Reset all to defaults": asks for confirmation.
+ */
+function design_tokens_settings_form_reset($form, &$form_state) {
+  $form_state['redirect'] = 'admin/appearance/tokens/' . $form['#theme_name'] . '/reset';
+}
+
+/**
+ * Form constructor: confirms resetting all of a theme's tokens.
+ *
+ * @param string $theme_name
+ *   The machine name of the theme.
+ *
+ * @see design_tokens_reset_confirm_form_submit()
+ */
+function design_tokens_reset_confirm_form($form, &$form_state, $theme_name) {
+  $themes = list_themes();
+  $theme_label = isset($themes[$theme_name]->info['name']) ? $themes[$theme_name]->info['name'] : $theme_name;
+  $form['#theme_name'] = $theme_name;
+
+  return confirm_form($form,
+    t('Reset all %theme tokens to their defaults?', array('%theme' => $theme_label)),
+    'admin/appearance/tokens/' . $theme_name,
+    t('Every color, font and other value on the %theme Design Tokens page will be replaced with the theme\'s default. Changes made on that page will be lost. This cannot be undone.', array('%theme' => $theme_label)),
+    t('Reset all to defaults'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Form submit handler for design_tokens_reset_confirm_form().
  *
  * Saves the theme's current defaults as the token values, instead of deleting
  * the saved values. With no saved values, the site would follow the theme's
  * defaults live, so a later theme update that changes a default would change
  * this site too. Backdrop's rule is that new defaults only reach new sites.
  */
-function design_tokens_settings_form_reset($form, &$form_state) {
+function design_tokens_reset_confirm_form_submit($form, &$form_state) {
   $theme_name = $form['#theme_name'];
   $info = design_tokens_load_info($theme_name);
   $defaults = array();
@@ -391,5 +437,6 @@ function design_tokens_settings_form_reset($form, &$form_state) {
   }
   design_tokens_save_values($theme_name, $defaults);
   design_tokens_save_scheme($theme_name, '');
-  backdrop_set_message(t('Token settings reset to defaults.'));
+  backdrop_set_message(t('All tokens were reset to their defaults.'));
+  $form_state['redirect'] = 'admin/appearance/tokens/' . $theme_name;
 }
