@@ -68,9 +68,24 @@ function design_tokens_color_build_field($token_name, array $token, array $curre
     $attributes['data-contrast-with'] = $token['contrast_with'];
   }
 
+  // A token whose default is calculated in CSS (such as color-mix()) is
+  // "Automatic" while its value is that calculation: the field is empty, and
+  // an empty field is saved as the calculation again.
+  $description = '';
+  if (!empty($token['calculated'])) {
+    $attributes['data-calculated'] = 'calculated';
+    $attributes['data-default'] = $token['default'];
+    $attributes['placeholder'] = t('Automatic');
+    if (design_tokens_is_calculated($value)) {
+      $value = '';
+    }
+    $description = t('Automatic: the theme calculates this color from its other colors. Choose a color to set it yourself.');
+  }
+
   return array(
     '#type' => 'textfield',
     '#title' => isset($token['label']) ? $token['label'] : $token_name,
+    '#description' => $description,
     '#default_value' => $value,
     '#size' => 10,
     '#maxlength' => 7,

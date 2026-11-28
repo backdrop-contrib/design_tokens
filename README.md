@@ -48,8 +48,8 @@ It is an infrastructure module. Themes declare what they support; the module han
 
 ## How it works
 
-1. A theme places a `tokens.inc` file in its root directory declaring the tokens it supports.
-2. Design Tokens discovers the file and loads the token definitions.
+1. A theme places a `tokens.inc` file in its root directory declaring the tokens it supports, and keeps their default values in a variables CSS file.
+2. Design Tokens discovers the file, loads the token definitions and reads the defaults from the variables file.
 3. Sub-modules register token types (e.g. `design_tokens_color`) and provide the field UI.
 4. A site architect visits **Appearance > Design Tokens** and configures values with a live
    preview of the site alongside the form.
@@ -82,15 +82,36 @@ A site wanting only color control enables `design_tokens` + `design_tokens_color
 wanting color, fonts, and utility classes enables all four. Third-party developers can add
 new token types as additional sub-modules without touching the parent.
 
-## Adding Design Tokens support to a theme
+## Writing a theme for Design Tokens
 
-Place a `tokens.inc` file in your theme's root directory. The module detects it automatically.
+A Design Tokens theme has two files that work together:
+
+- **A variables file** (for example `css/my-theme-variables.css`) with a `:root {}` block of CSS custom properties. This is where every default value lives. Without Design Tokens, the browser uses it directly, so the theme works on its own.
+- **`tokens.inc`** in the theme's root folder. It says which of those variables Site Architects can change and how they appear on the settings page: label, type and group. It doesn't repeat the values.
+
+When Design Tokens is active, it reads the defaults from the variables file, removes that file from the page and injects a `:root {}` block with the values saved on the settings page.
+
+The theme's own CSS only ever uses the variables, for example `background-color: var(--color-primary);`.
+
+### The variables file
+
+```css
+:root {
+  --color-primary:   #6e0e0a;
+  --color-card-bg:   color-mix(in srgb, var(--color-primary) 5%, white);
+  --font-heading:    'Merriweather', Georgia, serif;
+}
+```
+
+- Write each value once, here. Token names in `tokens.inc` are the variable names without the leading `--`.
+- **Calculated values** such as `color-mix()`, `var()` or `calc()` become "Automatic" defaults: Design Tokens injects the calculation, so the value keeps following the tokens it comes from until someone chooses their own. A color field shows "Automatic" and offers "Use automatic" to go back.
+
+### tokens.inc
 
 ```php
 <?php
 $info = array(
-  // Static CSS file to remove when Design Tokens is active (prevents duplicate variables).
-  // Can also be an array of files.
+  // The file with the default values. Can also be an array of files.
   'variables_file' => 'css/my-theme-variables.css',
 
   'groups' => array(
@@ -102,60 +123,85 @@ $info = array(
     'color-primary' => array(
       'label'   => t('Background'),
       'type'    => 'color',       // Provided by design_tokens_color
-      'default' => '#6e0e0a',
       'group'   => 'header',
       'utility' => TRUE,          // Generate a .dt-bg-primary utility class
+    ),
+    'color-card-bg' => array(
+      'label'   => t('Card background'),
+      'type'    => 'color',
+      'group'   => 'header',
     ),
     'font-heading' => array(
       'label'   => t('Heading font'),
       'type'    => 'font',        // Provided by design_tokens_font
-      'default' => "'Merriweather', Georgia, serif",
       'group'   => 'typography',
     ),
   ),
 
   'schemes' => array(
+    // No 'tokens': uses the defaults from the variables file.
     'default' => array(
-      'title'  => t('Default'),
+      'title' => t('Default'),
+    ),
+    'night' => array(
+      'title'  => t('Night'),
       'tokens' => array(
-        'color-primary' => '#6e0e0a',
+        'color-primary' => '#1a1a2e',
       ),
     ),
   ),
 );
 ```
 
+`tokens.inc` is PHP, so repeated tokens (for example one color per front page block) can be written in a loop.
+
 ### Token keys
 
 | Key | Required | Description |
 |---|---|---|
-| `label` | Yes | Human-readable label shown in the admin UI |
+| `label` | Recommended | Label shown on the settings page. Falls back to the token name, but Site Architects see it, so give a real one. |
 | `type` | Yes | Token type (`color`, `font`, `text`). Unknown types show a plain text field. |
-| `default` | Yes | Default CSS value used before any config is saved |
 | `group` | No | Groups the token under a collapsible fieldset |
+| `default` | No | Only needed for a token that isn't in the variables file. A value in the variables file wins over it. |
 | `utility` | No | If `TRUE`, `design_tokens_utility` generates a utility CSS class for this token |
+| `contrast_with` | No | For a background color: the token to check its contrast against, or `auto`. Tokens ending in `-text` are paired with their background automatically. |
+
+The settings page warns about any token that ends up without a default.
+
+### Where defaults come from
+
+For each token, the first of these that has a value wins, highest first:
+
+1. A default set by a `hook_design_tokens_info_alter()` implementation.
+2. The variables file(s). With a subtheme, the subtheme's file overrides its base theme's.
+3. `default` in `tokens.inc`.
+
+### Saved values and new defaults
+
+When a theme is enabled (or Design Tokens is installed), its defaults are saved as the theme's token values, the way a module's default configuration is installed. After that, a change to a default in the theme's files only reaches new sites, and existing sites keep their values. **Reset all to defaults** on the settings page saves the theme's current defaults again.
 
 ### Preset schemes
 
-Schemes are named sets of token values. When a scheme is selected in the admin UI, all
-fields populate at once. The selected scheme name is saved to config and pre-selected on
-the next visit. If any token value is changed after a scheme is applied, the selector
-automatically shows "Custom" — verified server-side on save.
+Schemes are named sets of token values. When a scheme is selected in the admin UI, all fields populate at once. The selected scheme name is saved to config and pre-selected on the next visit. If any token value is changed after a scheme is applied, the selector automatically shows "Custom", verified server-side on save.
+
+A scheme without a `tokens` list uses the defaults of the tokens the theme's other schemes set, so a "default" scheme switches back exactly what the others change. If no scheme lists tokens, it uses the defaults of all color tokens.
 
 ### Utility classes
 
-When `design_tokens_utility` is enabled, tokens with `'utility' => TRUE` generate CSS
-classes that site architects can apply to blocks in the layout editor's CSS class field:
+When `design_tokens_utility` is enabled, tokens with `'utility' => TRUE` generate CSS classes that site architects can apply to blocks in the layout editor's CSS class field:
 
-- **Color tokens** — `.dt-bg-{slug}` sets background, text, and link color together
-- **Font tokens** — `.dt-font-{slug}` (all text) and `.dt-title-{slug}` (block title only)
+- **Color tokens**: `.dt-bg-{slug}` sets background, text, and link color together
+- **Font tokens**: `.dt-font-{slug}` (all text) and `.dt-title-{slug}` (block title only)
 
-The reference page at **Appearance > Design Tokens > [Theme] > Utility Classes** shows all
-available classes with live color swatches.
+The reference page at **Appearance > Design Tokens > [Theme] > Utility Classes** shows all available classes with live color swatches.
 
 ### Subthemes
 
-A subtheme of a theme with a `tokens.inc` needs no `tokens.inc` of its own: the module uses the nearest base theme's file. The subtheme still gets its own settings page and saved values at `admin/appearance/tokens/SUBTHEME`. To change defaults or add tokens, implement `hook_design_tokens_info_alter()` in the subtheme's `template.php` and check that `$theme_name` is the subtheme. To remove an extra static variables file of the subtheme, add it to `variables_file`, which can be an array: each file is looked up in the folder of the active theme and of every base theme.
+A subtheme of a theme with a `tokens.inc` needs no `tokens.inc` of its own: the module uses the nearest base theme's file. The subtheme still gets its own settings page and saved values at `admin/appearance/tokens/SUBTHEME`.
+
+- **To change defaults**, give the subtheme its own variables file with only the values it changes, and list both files in `variables_file` (each file is looked up in the folder of the active theme and of every base theme, base themes first). Everything the subtheme doesn't set comes from the base theme.
+- **To add tokens, groups or schemes**, implement `hook_design_tokens_info_alter()` in the subtheme's `template.php` and check that `$theme_name` is the subtheme. New tokens can take their defaults from the subtheme's variables file too.
+- The settings page has a collapsed **"Theme developers: Where the defaults come from"** panel listing the tokens whose default comes from a base theme, to spot a value missing from the subtheme's file.
 
 ## Admin UI
 
@@ -163,6 +209,7 @@ A subtheme of a theme with a `tokens.inc` needs no `tokens.inc` of its own: the 
 |---|---|
 | `admin/appearance/tokens` | Overview — all themes with token support |
 | `admin/appearance/tokens/[theme]` | Configure tokens for a specific theme |
+| `admin/appearance/tokens/[theme]/reset` | Confirm resetting all of a theme's tokens to their defaults |
 | `admin/appearance/tokens/[theme]/utilities` | Utility class reference page |
 
 The settings page shows tokens organized by group, a preset scheme selector, WCAG contrast

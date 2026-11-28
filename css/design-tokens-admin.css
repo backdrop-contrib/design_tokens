@@ -103,3 +103,26 @@ body.design-tokens-preview-open .layout-container {
   width: 100%;
   border: none;
 }
+
+/* Note shown after a section's "Reset to defaults" button is clicked. */
+.design-tokens-reset-note {
+  display: inline-block;
+  margin-inline-start: 0.75em;
+  font-style: italic;
+}
+
+/* Theme developers' panel: set apart from the token groups above it, with a
+   grey, dashed "workbench" look and a code font on its title, so it reads as
+   a tool for developers rather than another group of settings. */
+.design-tokens-default-sources {
+  margin-top: 2.5em;
+  background-color: #f2f3f5;
+  border: 2px dashed #b9bcc4;
+}
+.design-tokens-default-sources > summary {
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  color: #3b3f47;
+}
+.design-tokens-default-sources > summary {
+  cursor: pointer;
+}

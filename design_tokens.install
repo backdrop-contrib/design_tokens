@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Design Tokens module.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Saves the token defaults of themes that were enabled before this module,
+ * as design_tokens_themes_enabled() does for themes enabled later.
+ */
+function design_tokens_install() {
+  foreach (list_themes() as $theme_name => $theme) {
+    if ($theme->status) {
+      design_tokens_save_initial_values($theme_name);
+    }
+  }
+}

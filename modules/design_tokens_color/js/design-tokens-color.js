@@ -233,6 +233,22 @@
 
         $text.after($picker);
 
+        // Calculated tokens: an empty field means "Automatic". Offer a button
+        // to go back to it once a color has been chosen.
+        var isCalculated = $text.is('[data-calculated]');
+        var $auto = $();
+        if (isCalculated) {
+          $auto = $('<button>')
+            .attr('type', 'button')
+            .addClass('button button-secondary design-tokens-color-auto')
+            .text(Backdrop.t('Use automatic'))
+            .toggle($text.val() !== '');
+          $picker.after($auto);
+          $auto.on('click', function () {
+            $text.val('').trigger('change');
+          });
+        }
+
         var isBgWithHint = !!$text.data('contrast-with');
 
         // Add a contrast badge after the picker for text tokens and for
@@ -250,6 +266,7 @@
         $picker.on('input change', function () {
           var value = $picker.val();
           $text.val(value);
+          $auto.toggle(true);
           Backdrop.designTokens.updatePreview(tokenName, value);
           if (isTextToken) {
             updateContrastBadge($text);
@@ -279,6 +296,13 @@
           var value = $text.val().toLowerCase();
           if (/^#[0-9a-f]{6}$/.test(value)) {
             $picker.val(value);
+          }
+          if (isCalculated) {
+            $auto.toggle(value !== '');
+            // Automatic: preview the theme's calculation.
+            if (value === '') {
+              value = $text.data('default');
+            }
           }
           Backdrop.designTokens.updatePreview(tokenName, value);
           if (isTextToken) {

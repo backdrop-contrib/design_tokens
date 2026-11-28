@@ -44,6 +44,9 @@ function hook_design_tokens_types() {
  *   - 'tokens': array of token definitions keyed by token name.
  *   - 'groups': array of group labels keyed by group machine name.
  *   - 'schemes': array of preset scheme definitions.
+ *   After the alter hooks run, tokens without a default (or whose default no
+ *   hook changed) take their default from the theme's variables file(s). A
+ *   default set here wins over the variables file.
  * @param string $theme_name
  *   The machine name of the theme whose tokens are being loaded. When the
  *   active theme (or any theme in its base theme chain) implements this hook

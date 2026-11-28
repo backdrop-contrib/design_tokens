@@ -50,6 +50,18 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
   $schemes = isset($info['schemes']) ? $info['schemes'] : array();
   $types = design_tokens_get_types();
 
+  // Tokens with no default from tokens.inc or the variables file have nothing
+  // to reset to, and no value on a site that never saved one.
+  $missing = array();
+  foreach ($tokens as $token_name => $token) {
+    if (!isset($token['default'])) {
+      $missing[] = $token_name;
+    }
+  }
+  if ($missing && empty($form_state['input'])) {
+    backdrop_set_message(t('These tokens have no default value: %tokens. Add them to the theme\'s variables file, or give them a <code>default</code> in tokens.inc.', array('%tokens' => implode(', ', $missing))), 'warning');
+  }
+
   $form['#theme_name'] = $theme_name;
 
   // Link to theme settings for options not managed by Design Tokens.
@@ -173,6 +185,23 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     }
   }
 
+  // Draw groups section by section, in the order the sections are declared,
+  // so a group added to a section (for example by a subtheme's alter hook,
+  // which appends it to the end of the groups list) appears inside that
+  // section instead of starting the section a second time. Groups that are
+  // in no section follow, in their own order.
+  if (!empty($info['sections'])) {
+    $ordered_groups = array();
+    foreach ($info['sections'] as $section) {
+      foreach ($section['groups'] as $group_key) {
+        if (isset($groups[$group_key])) {
+          $ordered_groups[$group_key] = $groups[$group_key];
+        }
+      }
+    }
+    $groups = $ordered_groups + $groups;
+  }
+
   // Render grouped tokens as fieldsets. Groups are assigned sequential
   // negative weights so they render in tokens.inc declaration order. The first
   // group gets the most negative weight and is expanded; the rest are collapsed.
@@ -252,6 +281,58 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
     }
   }
 
+  // For theme developers: list the tokens whose default comes from another
+  // theme (a base theme), so a value missing from a subtheme's variables file
+  // can be spotted. Collapsed, and left out when there is nothing to list.
+  $themes = list_themes();
+  $theme_label = isset($themes[$theme_name]->info['name']) ? $themes[$theme_name]->info['name'] : $theme_name;
+  $inherited_rows = array();
+  $source_themes = array();
+  $example = '';
+  foreach ($tokens as $token_name => $token) {
+    if (empty($token['default_source']) || $token['default_source']['theme'] === $theme_name) {
+      continue;
+    }
+    $source = $token['default_source'];
+    $source_label = isset($themes[$source['theme']]->info['name']) ? $themes[$source['theme']]->info['name'] : $source['theme'];
+    $source_themes[$source_label] = $source_label;
+    if (!$example) {
+      $example = '--' . $token_name . ': ' . $token['default'] . ';';
+    }
+    // Many labels only make sense inside their group ("Background"), so
+    // show the group too.
+    $token_label = isset($token['label']) ? $token['label'] : $token_name;
+    if (!empty($token['group']) && isset($groups[$token['group']])) {
+      $group_def = $groups[$token['group']];
+      $token_label = (is_array($group_def) ? $group_def['label'] : $group_def) . ': ' . $token_label;
+    }
+    $inherited_rows[] = array(
+      check_plain($token_label) . '<br><code>--' . check_plain($token_name) . '</code>',
+      '<code>' . check_plain($token['default']) . '</code>',
+      t('@theme, <code>@file</code>', array('@theme' => $source_label, '@file' => $source['file'])),
+    );
+  }
+  if ($inherited_rows) {
+    $variables_files = !empty($info['variables_file']) ? (array) $info['variables_file'] : array();
+    $own_file = $variables_files ? end($variables_files) : 'css/variables.css';
+    $form['default_sources'] = array(
+      '#type' => 'markup',
+      '#markup' => '<details class="design-tokens-default-sources">'
+        . '<summary style="cursor: pointer;">' . t('Theme developers: Where the defaults come from') . '</summary>'
+        . '<p style="margin-top: 0.5em;">' . t('Site Architects can change colors and fonts without this section.') . '</p>'
+        . '<p>' . t('%theme is built on %base. A theme like this only needs to set the values it wants to change; everything else is taken from the theme it is built on. The tokens below take their default value from %base, not from %theme.', array('%theme' => $theme_label, '%base' => implode(', ', $source_themes))) . '</p>'
+        . '<p>' . t('That is usually intended. If one of them should have its own value in %theme, add it to %theme\'s variables file (<code>@file</code>) with the value you want, for example <code>@example</code>. Then clear the caches.', array('%theme' => $theme_label, '@file' => $own_file, '@example' => $example)) . '</p>'
+        . '<p>' . t('These are only the defaults: they are used by <em>Reset to defaults</em> and when the theme is first enabled. Values already saved on this page are not affected.') . '</p>'
+        . theme('table', array(
+          'header' => array(t('Token'), t('Default'), t('Comes from')),
+          'rows' => $inherited_rows,
+        ))
+        . '</details>',
+      // Just above the buttons, which core weights at 100.
+      '#weight' => 99,
+    );
+  }
+
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -259,7 +340,7 @@ function design_tokens_settings_form($form, &$form_state, $theme_name) {
   );
   $form['actions']['reset'] = array(
     '#type' => 'submit',
-    '#value' => t('Reset to defaults'),
+    '#value' => t('Reset all to defaults'),
     '#submit' => array('design_tokens_settings_form_reset'),
     '#limit_validation_errors' => array(),
   );
@@ -348,6 +429,11 @@ function design_tokens_settings_form_submit($form, &$form_state) {
     elseif (isset($form_state['values'][$group][$token_name])) {
       $values[$token_name] = $form_state['values'][$group][$token_name];
     }
+    // An empty field for a calculated token means "Automatic": save the
+    // calculation, so the value keeps following the tokens it comes from.
+    if (!empty($token['calculated']) && isset($values[$token_name]) && trim($values[$token_name]) === '') {
+      $values[$token_name] = $token['default'];
+    }
   }
 
   design_tokens_save_values($theme_name, $values);
@@ -371,11 +457,55 @@ function design_tokens_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Form submit handler — resets tokens to defaults.
+ * Form submit handler for "Reset all to defaults": asks for confirmation.
  */
 function design_tokens_settings_form_reset($form, &$form_state) {
+  $form_state['redirect'] = 'admin/appearance/tokens/' . $form['#theme_name'] . '/reset';
+}
+
+/**
+ * Form constructor: confirms resetting all of a theme's tokens.
+ *
+ * @param string $theme_name
+ *   The machine name of the theme.
+ *
+ * @see design_tokens_reset_confirm_form_submit()
+ */
+function design_tokens_reset_confirm_form($form, &$form_state, $theme_name) {
+  $themes = list_themes();
+  $theme_label = isset($themes[$theme_name]->info['name']) ? $themes[$theme_name]->info['name'] : $theme_name;
+  $form['#theme_name'] = $theme_name;
+
+  return confirm_form($form,
+    t('Reset all %theme tokens to their defaults?', array('%theme' => $theme_label)),
+    'admin/appearance/tokens/' . $theme_name,
+    t('Every color, font and other value on the %theme Design Tokens page will be replaced with the theme\'s default. Changes made on that page will be lost. This cannot be undone.', array('%theme' => $theme_label)),
+    t('Reset all to defaults'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Form submit handler for design_tokens_reset_confirm_form().
+ *
+ * Saves the theme's current defaults as the token values, instead of deleting
+ * the saved values. With no saved values, the site would follow the theme's
+ * defaults live, so a later theme update that changes a default would change
+ * this site too. Backdrop's rule is that new defaults only reach new sites.
+ */
+function design_tokens_reset_confirm_form_submit($form, &$form_state) {
   $theme_name = $form['#theme_name'];
-  design_tokens_save_values($theme_name, array());
+  $info = design_tokens_load_info($theme_name);
+  $defaults = array();
+  if (!empty($info['tokens'])) {
+    foreach ($info['tokens'] as $token_name => $token) {
+      if (isset($token['default'])) {
+        $defaults[$token_name] = $token['default'];
+      }
+    }
+  }
+  design_tokens_save_values($theme_name, $defaults);
   design_tokens_save_scheme($theme_name, '');
-  backdrop_set_message(t('Token settings reset to defaults.'));
+  backdrop_set_message(t('All tokens were reset to their defaults.'));
+  $form_state['redirect'] = 'admin/appearance/tokens/' . $theme_name;
 }
