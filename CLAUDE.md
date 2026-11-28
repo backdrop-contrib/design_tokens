@@ -74,8 +74,8 @@ type sub-module is active.
 
 ### How It Works
 
-1. A theme declares available tokens in a `tokens.inc` file in its root directory
-2. The parent module discovers the file and loads the token definitions
+1. A theme declares available tokens in a `tokens.inc` file in its root directory; their default values live in the theme's variables CSS file (`variables_file`)
+2. The parent module discovers the file, loads the token definitions and reads the defaults from the variables file (`design_tokens_apply_variables_defaults()`): precedence `default` in tokens.inc < variables file < alter hooks; calculated values (with a parenthesis) become "Automatic" defaults (`'calculated' => TRUE`)
 3. Sub-modules register token types and tell the parent how to render their fields
 4. Site admin edits values through the admin UI and saves
 5. Values are stored in Backdrop config: `theme.tokens.THEMENAME.json`
@@ -139,7 +139,7 @@ labels, which `.info` files do not. The name `tokens.inc` is a deliberate parall
 
 ### Format
 
-Themes place a `tokens.inc` file in their root directory. The module detects it automatically.
+Themes place a `tokens.inc` file in their root directory. The module detects it automatically. Since the defaults-from-variables-file change, themes normally leave out `'default'` and write the values only in their variables file; the example below still works (a `'default'` is used when the variables file doesn't set the token). README.md, "Writing a theme for Design Tokens", has the current format.
 
 ```php
 <?php
