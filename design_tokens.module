@@ -251,6 +251,15 @@ function design_tokens_load_info($theme_name) {
   include $tokens_file;
   $info['owner_theme'] = $owner_theme;
 
+  // Remember the defaults written in tokens.inc, so defaults that alter hooks
+  // change can be told apart from them later.
+  $file_defaults = array();
+  if (!empty($info['tokens'])) {
+    foreach ($info['tokens'] as $token_name => $token) {
+      $file_defaults[$token_name] = isset($token['default']) ? $token['default'] : NULL;
+    }
+  }
+
   // Call module alter hooks and the active theme's alter (if any).
   backdrop_alter('design_tokens_info', $info, $theme_name);
 
@@ -273,8 +282,216 @@ function design_tokens_load_info($theme_name) {
     }
   }
 
+  design_tokens_apply_variables_defaults($info, $theme_name, $file_defaults);
+
   $cache[$theme_name] = $info;
   return $info;
+}
+
+/**
+ * Takes token defaults from the theme's static variables file(s).
+ *
+ * The values in the variables file are what visitors see when Design Tokens
+ * is not active, so they are the theme's real defaults. Reading them here
+ * means a theme writes each value once, in CSS, instead of repeating it as
+ * 'default' in tokens.inc.
+ *
+ * Order of precedence, lowest first:
+ * - 'default' in tokens.inc.
+ * - The value in the variables file(s). Files are read for every theme in the
+ *   chain, base themes first, so a subtheme's file overrides its base theme's.
+ * - A default set or changed by a hook_design_tokens_info_alter()
+ *   implementation.
+ *
+ * A value calculated in CSS (anything with a parenthesis, such as color-mix()
+ * or var()) is kept as the default and the token is marked 'calculated'. The
+ * module then injects the calculation itself, so the value keeps following
+ * the tokens it is calculated from until someone sets their own value; a
+ * color field shows it as "Automatic".
+ *
+ * A scheme without a 'tokens' key gets the final defaults of the tokens the
+ * other schemes set (or of all color tokens, if no scheme lists any), so a
+ * theme's default scheme doesn't have to repeat them.
+ *
+ * @param array $info
+ *   The token info array, after alter hooks have run.
+ * @param string $theme_name
+ *   The machine name of the theme.
+ * @param array $file_defaults
+ *   The 'default' of each token as written in tokens.inc (NULL if none),
+ *   keyed by token name.
+ */
+function design_tokens_apply_variables_defaults(array &$info, $theme_name, array $file_defaults) {
+  if (empty($info['tokens'])) {
+    return;
+  }
+
+  $css_values = array();
+  $css_sources = array();
+  if (!empty($info['variables_file'])) {
+    $css_values = design_tokens_read_variables_files($theme_name, (array) $info['variables_file'], $css_sources);
+  }
+
+  foreach ($info['tokens'] as $token_name => $token) {
+    $current = isset($token['default']) ? $token['default'] : NULL;
+    $original = array_key_exists($token_name, $file_defaults) ? $file_defaults[$token_name] : NULL;
+    // A token added by an alter hook, or a default an alter hook changed,
+    // stays as the hook set it, unless the hook left it empty.
+    $altered = !array_key_exists($token_name, $file_defaults) || $current !== $original;
+
+    // Record where the default comes from, for the settings page. A default
+    // set by an alter hook has no file to point to.
+    unset($info['tokens'][$token_name]['default_source']);
+    if (!$altered && $current !== NULL) {
+      $info['tokens'][$token_name]['default_source'] = array(
+        'theme' => $info['owner_theme'],
+        'file' => 'tokens.inc',
+      );
+    }
+
+    if (isset($css_values[$token_name]) && (!$altered || $current === NULL)) {
+      $info['tokens'][$token_name]['default'] = $css_values[$token_name];
+      $info['tokens'][$token_name]['default_source'] = $css_sources[$token_name];
+    }
+    $default = isset($info['tokens'][$token_name]['default']) ? $info['tokens'][$token_name]['default'] : '';
+    $info['tokens'][$token_name]['calculated'] = design_tokens_is_calculated($default);
+  }
+
+  // A scheme without 'tokens' uses the defaults of the tokens the theme's
+  // other schemes set, so it switches the same colors back. If no other
+  // scheme lists tokens, it uses the defaults of all color tokens.
+  if (!empty($info['schemes'])) {
+    $scheme_tokens = array();
+    foreach ($info['schemes'] as $scheme) {
+      if (isset($scheme['tokens'])) {
+        $scheme_tokens += $scheme['tokens'];
+      }
+    }
+    $defaults = array();
+    foreach ($info['tokens'] as $token_name => $token) {
+      if (!isset($token['default'])) {
+        continue;
+      }
+      if ($scheme_tokens ? isset($scheme_tokens[$token_name]) : (isset($token['type']) && $token['type'] === 'color')) {
+        $defaults[$token_name] = $token['default'];
+      }
+    }
+    foreach ($info['schemes'] as $scheme_key => $scheme) {
+      if (!isset($scheme['tokens'])) {
+        $info['schemes'][$scheme_key]['tokens'] = $defaults;
+      }
+    }
+  }
+}
+
+/**
+ * Tells whether a token value is a CSS calculation rather than a plain value.
+ *
+ * @param string $value
+ *   A token value, e.g. '#6e0e0a' or 'color-mix(in srgb, var(--x) 5%, white)'.
+ *
+ * @return bool
+ *   TRUE for values such as color-mix(), var() or calc().
+ */
+function design_tokens_is_calculated($value) {
+  return is_string($value) && strpos($value, '(') !== FALSE;
+}
+
+/**
+ * Reads CSS custom properties from a theme's static variables file(s).
+ *
+ * @param string $theme_name
+ *   The machine name of the theme.
+ * @param array $variables_files
+ *   File paths relative to a theme folder, as in tokens.inc 'variables_file'.
+ * @param array $sources
+ *   (optional) Filled with where each value came from, keyed by property
+ *   name: an array with 'theme' (machine name) and 'file' (path relative to
+ *   that theme's folder).
+ *
+ * @return array
+ *   Values keyed by property name without the leading "--". Each file is
+ *   looked up in every theme of the chain, base themes first; later files
+ *   override earlier ones.
+ */
+function design_tokens_read_variables_files($theme_name, array $variables_files, &$sources = NULL) {
+  $values = array();
+  $sources = array();
+  foreach (design_tokens_get_theme_chain($theme_name) as $chain_theme) {
+    $theme_path = BACKDROP_ROOT . '/' . backdrop_get_path('theme', $chain_theme);
+    foreach ($variables_files as $variables_file) {
+      $path = $theme_path . '/' . $variables_file;
+      if (is_file($path)) {
+        foreach (design_tokens_parse_variables(file_get_contents($path)) as $name => $value) {
+          $values[$name] = $value;
+          $sources[$name] = array('theme' => $chain_theme, 'file' => $variables_file);
+        }
+      }
+    }
+  }
+  return $values;
+}
+
+/**
+ * Parses the custom properties in the :root {} blocks of a CSS string.
+ *
+ * @param string $css
+ *   CSS source.
+ *
+ * @return array
+ *   Values keyed by property name without the leading "--".
+ */
+function design_tokens_parse_variables($css) {
+  $values = array();
+  $css = preg_replace('!/\*.*?\*/!s', '', $css);
+  if (preg_match_all('/:root\s*\{([^}]*)\}/', $css, $blocks)) {
+    foreach ($blocks[1] as $block) {
+      preg_match_all('/--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);/', $block, $matches, PREG_SET_ORDER);
+      foreach ($matches as $match) {
+        $values[$match[1]] = trim($match[2]);
+      }
+    }
+  }
+  return $values;
+}
+
+/**
+ * Implements hook_themes_enabled().
+ *
+ * Saves each newly enabled theme's token defaults as its configuration, the
+ * same way a module's default config is installed: later changes to the
+ * theme's defaults then only reach new sites, not existing ones.
+ */
+function design_tokens_themes_enabled($theme_list) {
+  foreach ($theme_list as $theme_name) {
+    design_tokens_save_initial_values($theme_name);
+  }
+}
+
+/**
+ * Saves a theme's default token values as config, if it has none yet.
+ *
+ * A theme that ships its own config/theme.tokens.<theme>.json keeps that file
+ * (core installs it before hook_themes_enabled() runs), so this does nothing
+ * for it.
+ *
+ * @param string $theme_name
+ *   The machine name of the theme.
+ */
+function design_tokens_save_initial_values($theme_name) {
+  $config = config('theme.tokens.' . $theme_name);
+  if (!$config->isNew()) {
+    return;
+  }
+  $info = design_tokens_load_info($theme_name);
+  if (empty($info['tokens'])) {
+    return;
+  }
+  $config->set('tokens', design_tokens_get_values($theme_name));
+  if (isset($info['schemes']['default'])) {
+    $config->set('scheme', 'default');
+  }
+  $config->save();
 }
 
 /**

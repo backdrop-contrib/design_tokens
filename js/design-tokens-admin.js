@@ -52,7 +52,7 @@
         $.each(scheme.tokens, function (token_name, value) {
           var $field = $('[data-token-name="' + token_name + '"]');
           if ($field.length) {
-            $field.val(value).trigger('change');
+            $field.val(Backdrop.designTokens.fieldValue($field, value)).trigger('change');
           }
         });
         // Clear the flag after all triggered change events have fired.
@@ -68,7 +68,7 @@
         $fieldset.find('[data-token-name]').each(function () {
           var tokenName = $(this).data('token-name');
           if (defaults.hasOwnProperty(tokenName)) {
-            $(this).val(defaults[tokenName]).trigger('change');
+            $(this).val(Backdrop.designTokens.fieldValue($(this), defaults[tokenName])).trigger('change');
           }
         });
 
@@ -99,6 +99,23 @@
    * Shared Design Tokens preview utilities.
    */
   Backdrop.designTokens = Backdrop.designTokens || {
+
+    /**
+     * Returns the value to put in a token field.
+     *
+     * A field marked data-calculated shows a CSS calculation (such as
+     * color-mix()) as an empty field, which means "Automatic".
+     *
+     * @param {jQuery} $field
+     * @param {string} value
+     * @return {string}
+     */
+    fieldValue: function ($field, value) {
+      if ($field.is('[data-calculated]') && String(value).indexOf('(') !== -1) {
+        return '';
+      }
+      return value;
+    },
 
     /**
      * Opens the preview panel, positioning it below the Backdrop toolbar.

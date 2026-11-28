@@ -112,3 +112,9 @@
 .dt-group-indicator--large {
   background: #e65100;
 }
+
+/* "Use automatic" button next to a calculated color's picker. */
+.design-tokens-color-auto {
+  margin-inline-start: 0.5em;
+  vertical-align: middle;
+}

@@ -78,7 +78,10 @@ function design_tokens_color_requirements($phase) {
       }
     }
 
-    if ($bg_hex && $text_hex && $pair_label) {
+    // Only plain hex colors can be checked; a calculated value (such as
+    // color-mix()) is left out.
+    $is_hex = '/^#[0-9a-f]{6}$/i';
+    if ($bg_hex && $text_hex && $pair_label && preg_match($is_hex, $bg_hex) && preg_match($is_hex, $text_hex)) {
       $ratio = _design_tokens_color_contrast($bg_hex, $text_hex);
       if ($ratio < 4.5) {
         $failures[] = array(
